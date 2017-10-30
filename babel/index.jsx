@@ -6,7 +6,7 @@ const roomSizeRange = [7, 12];
 
 // Generate random integer within range
 function randomInt([min, max]) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+  return Math.floor(Math.random() * ((max - min) + 1)) + min;
 }
 
 // Generate room object within size range
@@ -20,7 +20,7 @@ const createDungeon = () => {
   const placeCells = (
     grid,
     { x, y, width = 1, height = 1, id },
-    type = "floor"
+    type = 'floor'
   ) => {
     // Iterate over entire grid
     for (let i = y; i < y + height; i++) {
@@ -40,12 +40,11 @@ const createDungeon = () => {
       y < 1 ||
       x + width > grid[0].length - 1 ||
       y + height > grid.length - 1
-    )
-      return false;
+    ) { return false; }
     // Check adjacent rooms
     for (let i = y - 1; i < y + height; i++) {
       for (let j = x - y; j < x + width; j++) {
-        if (grid[i][j].type === "floor") return false;
+        if (grid[i][j].type === 'floor') return false;
       }
     }
     // If no conflicts, return true
@@ -62,7 +61,7 @@ const createDungeon = () => {
     const roomValues = [];
     // North (top) side
     const north = randomRoom(range);
-    north.x = randomInt(x, x + width - 1);
+    north.x = randomInt(x, x + (width - 1));
     north.y = y - north.height - 1;
     north.doorX = randomInt(
       north.x,
@@ -72,7 +71,7 @@ const createDungeon = () => {
     // East (right) side
     const east = randomRoom(range);
     east.x = x + width + 1;
-    east.y = randomInt(y, height + y - 1);
+    east.y = randomInt(y, height + (y - 1));
     east.doorX = east.x - 1;
     east.doorY = randomInt(
       east.y,
@@ -80,7 +79,7 @@ const createDungeon = () => {
     );
     // South (bottom) side
     const south = randomRoom(range);
-    south.x = randomInt(x, x + width - 1);
+    south.x = randomInt(x, x + (width - 1));
     south.y = y + height + 1;
     south.doorX = randomInt(
       south.x,
@@ -90,7 +89,7 @@ const createDungeon = () => {
     // West (left) side
     const west = randomRoom(range);
     west.x = x - west.width - 1;
-    west.y = randomInt(y, height + y - 1);
+    west.y = randomInt(y, height + (y - 1));
     west.doorX = x - 1;
     west.doorY = randomInt(
       west.y,
@@ -100,11 +99,11 @@ const createDungeon = () => {
     roomValues.push(north, east, south, west);
     // Attempt to place all rooms in grid
     const placedRooms = [];
-    roomValues.forEach(room => {
+    roomValues.forEach((room) => {
       // If room placement is valid, add it to the grid
       if (validRoomPlacement(grid, room)) {
         grid = placeCells(grid, room); // Place room in grid
-        grid = placeCells(grid, { x: room.doorX, y: room.doorY }, "door"); // Place door
+        grid = placeCells(grid, { x: room.doorX, y: room.doorY }, 'door'); // Place door
         placedRooms.push(room); // Update placedRooms for next seed
       }
     });
@@ -140,44 +139,38 @@ const createDungeon = () => {
 };
 
 // Redux store
-let firstStore = {
+const firstStore = {
   dungeon: createDungeon()
 };
 
 // Dungeon
-class Dungeon extends React.Component {
-  render() {
-    let { store } = this.props;
-    const cells = store.map(e => {
-      return (
-        <div className="row">
-          {e.map((cell, i) => {
-            return (
-              <div
-                className={
-                  cell.type === "floor" || cell.type === "door"
-                    ? `cell ${cell.type}`
-                    : "cell"
-                }
-                style={{ opacity: cell.opacity }}
-                key={`cell-${i}`}
-              >
-                {cell.id}
-              </div>
-            );
-          })}
+const Dungeon = (props) => {
+  const { store } = props;
+  const cells = store.map(e => (
+    <div className="row">
+      {e.map((cell, i) => (
+        <div
+          className={
+            cell.type === 'floor' || cell.type === 'door'
+              ? `cell ${cell.type}`
+              : 'cell'
+          }
+          style={{ opacity: cell.opacity }}
+          key={`cell-${i}`}
+        >
+          {cell.id}
         </div>
-      );
-    });
-    return (
-      <div className="app">
-        <div className="flex-container">{cells}</div>
-      </div>
-    );
-  }
-}
+      ))}
+    </div>
+  ));
+  return (
+    <div className="app">
+      <div className="flex-container">{cells}</div>
+    </div>
+  );
+};
 
 ReactDOM.render(
   <Dungeon store={firstStore.dungeon} />,
-  document.getElementById("container")
+  document.getElementById('container')
 );
