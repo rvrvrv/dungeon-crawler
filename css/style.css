@@ -1,0 +1,28 @@
+.app, .row {
+  display: flex;
+  justify-content: center;
+}
+
+.row {
+  color: #c00;
+}
+
+.flex-container {
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.cell {
+  height: 1em;
+  width: 1em;
+  border: 1px solid #2d2d2d;
+  background: #0c0;
+}
+
+.floor {
+  background: #d6d1d1;
+  border: 1px solid #dbd6d6;
+}
+
+.door {
+  background: #c00;
+}
