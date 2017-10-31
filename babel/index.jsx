@@ -104,7 +104,7 @@ const createDungeon = () => {
   for (let i = 0; i < gridHeight; i++) {
     grid.push([]);
     for (let j = 0; j < gridWidth; j++) {
-      grid[i].push({ type: 0, opacity: randomInt([80, 100]) / 100 });
+      grid[i].push({ type: 0, opacity: randomInt([40, 90]) / 100 });
     }
   }
   // Then, generate and place the first room
@@ -126,20 +126,90 @@ const createDungeon = () => {
   return growMap(grid, [firstRoom]);
 };
 
+// Create all entities (characters, items, etc.)
+const createEntities = (gameMap, lvl = 1) => {
+  // Prepare to store player's initial position
+  let playerPosition = [];
+  // Bosses appear after Level 4
+  const bosses = [];
+  if (lvl === 4) bosses.push({ health: 400, level: 5, type: 'boss' });
+  // Enemies attributes are based on level
+  const enemies = [];
+  for (let i = 0; i < 7; i++) {
+    enemies.push({ health: (lvl * 30) + 40, level: randomInt([Math.max(1, lvl - 1), lvl + 1]), type: 'enemy' });
+  }
+  // New exits appear before Level 4
+  const exits = [];
+  if (lvl < 4) exits.push({ type: 'exit' });
+  // Create player
+  const players = [{ type: 'player' }];
+  // Create 5 potions
+  const potions = Array(5).fill({ type: 'potion' });
+  // Define weapon types
+  const weaponTypes = [
+    { name: 'Pistol', damage: 13 },
+    { name: 'Rifle', damage: 17 },
+    { name: '2x Pistol', damage: 26 },
+    { name: '2x Rifle', damage: 34 },
+    { name: 'Shotgun', damage: 38 },
+    { name: 'Rail Gun', damage: 42 },
+    { name: 'Cannon', damage: 46 },
+    { name: 'Monster Blaster', damage: 50 }
+  ];
+  // Limit list of available weapons to current level
+  const availableWeapons = weaponTypes.filter(weapon => ((weapon.damage < ((lvl * 10) + 10))
+                                        && (weapon.damage > ((lvl * 10) - 10))));
+  const weapons = [];
+  // Randomly generate 3 available weapons
+  for (let i = 0; i < 3; i++) {
+    weapons.push({ ...availableWeapons[randomInt([1, availableWeapons.length]) - 1], type: 'weapon' });
+  }
+
+  // Place entities on open floor cells
+  [bosses, enemies, exits, players, potions, weapons].forEach((entities) => {
+    // Iterate over each entity
+    while (entities.length) {
+      // Get random x,y coordinates
+      const x = randomInt([1, gridWidth]) - 1;
+      const y = randomInt([1, gridHeight]) - 1;
+      // If random coordinates represent a floor cell, continue
+      if (gameMap[y][x].type === 'floor') {
+        // If applicable, store player's position
+        if (entities[0].type === 'player') playerPosition = [x, y];
+        // Place entity on cell
+        gameMap[y][x] = entities.pop();
+      }
+    }
+  });
+
+  // Replace door cells with floor cells
+  for (let i = 0; i < gameMap.length; i++) {
+    for (let j = 0; j < gameMap[0].length; j++) {
+      if (gameMap[i][j].type === 'door') gameMap[i][j].type = 'floor';
+    }
+  }
+
+  // Return newly created map, along with position of player
+  return { entities: gameMap, playerPosition };
+};
+
 // Redux store
+const dungeon = createDungeon();
 const firstStore = {
-  dungeon: createDungeon()
+  entities: createEntities(dungeon)
 };
 
 // Dungeon
 const Dungeon = (props) => {
-  const { store } = props;
-  const cells = store.map(e => (
-    <div className="row">
+  const { entities, playerPosition } = props.entities;
+  const [playerX, playerY] = playerPosition;
+
+  const cells = entities.map((e, eIdx) => (
+    <div className="row" key={Date.now() + eIdx}>
       {e.map((cell, i) => (
         <div
           className={
-            cell.type === 'floor' || cell.type === 'door'
+            cell.type
               ? `cell ${cell.type}`
               : 'cell'
           }
@@ -159,6 +229,6 @@ const Dungeon = (props) => {
 };
 
 ReactDOM.render(
-  <Dungeon store={firstStore.dungeon} />,
+  <Dungeon entities={firstStore.entities} />,
   document.getElementById('container')
 );
