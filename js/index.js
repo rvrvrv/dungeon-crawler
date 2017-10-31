@@ -1,16 +1,10 @@
-"use strict";
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+'use strict';
 
 // Initial room params
 var gridHeight = 30;
 var gridWidth = 40;
-var maximumRooms = 15;
-var roomSizeRange = [7, 12];
+var maxRooms = 15;
+var roomSizeRange = [4, 14];
 
 // Generate random integer within range
 function randomInt(_ref) {
@@ -27,16 +21,39 @@ function randomRoom(range) {
 
 // Generate the entire dungeon
 var createDungeon = function createDungeon() {
-  // Place cells in the grid
-  var placeCells = function placeCells(grid, _ref2) {
+  // Ensure room is within free space in grid
+  var validRoomPlacement = function validRoomPlacement(grid, _ref2) {
     var x = _ref2.x;
     var y = _ref2.y;
     var _ref2$width = _ref2.width;
     var width = _ref2$width === undefined ? 1 : _ref2$width;
     var _ref2$height = _ref2.height;
     var height = _ref2$height === undefined ? 1 : _ref2$height;
-    var id = _ref2.id;
-    var type = arguments.length <= 2 || arguments[2] === undefined ? "floor" : arguments[2];
+
+    // Check grid borders
+    if (x < 1 || y < 1 || x + width > grid[0].length - 1 || y + height > grid.length - 1) {
+      return false;
+    }
+    // Check adjacent rooms
+    for (var i = y - 1; i < y + height; i++) {
+      for (var j = x - 1; j < x + width; j++) {
+        if (grid[i][j].type === 'floor') return false;
+      }
+    }
+    // If no conflicts, return true
+    return true;
+  };
+
+  // Place cells in the grid
+  var placeCells = function placeCells(grid, _ref3) {
+    var x = _ref3.x;
+    var y = _ref3.y;
+    var _ref3$width = _ref3.width;
+    var width = _ref3$width === undefined ? 1 : _ref3$width;
+    var _ref3$height = _ref3.height;
+    var height = _ref3$height === undefined ? 1 : _ref3$height;
+    var id = _ref3.id;
+    var type = arguments.length <= 2 || arguments[2] === undefined ? 'floor' : arguments[2];
 
     // Iterate over entire grid
     for (var i = y; i < y + height; i++) {
@@ -46,27 +63,6 @@ var createDungeon = function createDungeon() {
     }
     // Return grid filled with cells
     return grid;
-  };
-
-  // Ensure room is within free space in grid
-  var validRoomPlacement = function validRoomPlacement(grid, _ref3) {
-    var x = _ref3.x;
-    var y = _ref3.y;
-    var _ref3$width = _ref3.width;
-    var width = _ref3$width === undefined ? 1 : _ref3$width;
-    var _ref3$height = _ref3.height;
-    var height = _ref3$height === undefined ? 1 : _ref3$height;
-
-    // Check grid borders
-    if (x < 1 || y < 1 || x + width > grid[0].length - 1 || y + height > grid.length - 1) return false;
-    // Check adjacent rooms
-    for (var i = y - 1; i < y + height; i++) {
-      for (var j = x - y; j < x + width; j++) {
-        if (grid[i][j].type === "floor") return false;
-      }
-    }
-    // If no conflicts, return true
-    return true;
   };
 
   // Generate rooms in random positions
@@ -81,28 +77,28 @@ var createDungeon = function createDungeon() {
     var roomValues = [];
     // North (top) side
     var north = randomRoom(range);
-    north.x = randomInt(x, x + width - 1);
+    north.x = randomInt([x, x + (width - 1)]);
     north.y = y - north.height - 1;
-    north.doorX = randomInt(north.x, Math.min(north.x + north.width, x + width) - 1);
+    north.doorX = randomInt([north.x, Math.min(north.x + north.width, x + width) - 1]);
     north.doorY = y - 1;
     // East (right) side
     var east = randomRoom(range);
     east.x = x + width + 1;
-    east.y = randomInt(y, height + y - 1);
+    east.y = randomInt([y, height + (y - 1)]);
     east.doorX = east.x - 1;
-    east.doorY = randomInt(east.y, Math.min(east.y + east.height, y + height) - 1);
+    east.doorY = randomInt([east.y, Math.min(east.y + east.height, y + height) - 1]);
     // South (bottom) side
     var south = randomRoom(range);
-    south.x = randomInt(x, x + width - 1);
+    south.x = randomInt([x, x + (width - 1)]);
     south.y = y + height + 1;
-    south.doorX = randomInt(south.x, Math.min(south.x + south.width, x + width) - 1);
+    south.doorX = randomInt([south.x, Math.min(south.x + south.width, x + width) - 1]);
     south.doorY = y + height;
     // West (left) side
     var west = randomRoom(range);
     west.x = x - west.width - 1;
-    west.y = randomInt(y, height + y - 1);
+    west.y = randomInt([y, height + (y - 1)]);
     west.doorX = x - 1;
-    west.doorY = randomInt(west.y, Math.min(west.y + west.height, y + height) - 1);
+    west.doorY = randomInt([west.y, Math.min(west.y + west.height, y + height) - 1]);
     // Place all four room sides into roomValues array
     roomValues.push(north, east, south, west);
     // Attempt to place all rooms in grid
@@ -111,7 +107,7 @@ var createDungeon = function createDungeon() {
       // If room placement is valid, add it to the grid
       if (validRoomPlacement(grid, room)) {
         grid = placeCells(grid, room); // Place room in grid
-        grid = placeCells(grid, { x: room.doorX, y: room.doorY }, "door"); // Place door
+        grid = placeCells(grid, { x: room.doorX, y: room.doorY }, 'door'); // Place door
         placedRooms.push(room); // Update placedRooms for next seed
       }
     });
@@ -124,18 +120,17 @@ var createDungeon = function createDungeon() {
   for (var i = 0; i < gridHeight; i++) {
     grid.push([]);
     for (var j = 0; j < gridWidth; j++) {
-      grid[i].push({ type: 0, opacity: randomInt([3, 8]) / 10 });
+      grid[i].push({ type: 0, opacity: randomInt([80, 100]) / 100 });
     }
   }
   // Then, generate and place the first room
   var firstRoom = randomRoom(roomSizeRange);
-  firstRoom.x = randomInt(1, gridWidth - roomSizeRange[1] - 15);
-  firstRoom.y = randomInt(1, gridHeight - roomSizeRange[1] - 15);
+  firstRoom.x = randomInt([1, gridWidth - roomSizeRange[1] - maxRooms]);
+  firstRoom.y = randomInt([1, gridHeight - roomSizeRange[1] - maxRooms]);
   grid = placeCells(grid, firstRoom);
   // Finally, use firstRoom as seed to fill grid
   var growMap = function growMap(grid, seedRooms) {
     var counter = arguments.length <= 2 || arguments[2] === undefined ? 1 : arguments[2];
-    var maxRooms = arguments.length <= 3 || arguments[3] === undefined ? maximumRooms : arguments[3];
 
     // Check to end recursion
     if (counter + seedRooms.length > maxRooms || !seedRooms.length) return grid;
@@ -155,48 +150,35 @@ var firstStore = {
 };
 
 // Dungeon
+var Dungeon = function Dungeon(props) {
+  var store = props.store;
 
-var Dungeon = function (_React$Component) {
-  _inherits(Dungeon, _React$Component);
-
-  function Dungeon() {
-    _classCallCheck(this, Dungeon);
-
-    return _possibleConstructorReturn(this, _React$Component.apply(this, arguments));
-  }
-
-  Dungeon.prototype.render = function render() {
-    var store = this.props.store;
-
-    var cells = store.map(function (e) {
-      return React.createElement(
-        "div",
-        { className: "row" },
-        e.map(function (cell, i) {
-          return React.createElement(
-            "div",
-            {
-              className: cell.type === "floor" || cell.type === "door" ? "cell " + cell.type : "cell",
-              style: { opacity: cell.opacity },
-              key: "cell-" + i
-            },
-            cell.id
-          );
-        })
-      );
-    });
+  var cells = store.map(function (e) {
     return React.createElement(
-      "div",
-      { className: "app" },
-      React.createElement(
-        "div",
-        { className: "flex-container" },
-        cells
-      )
+      'div',
+      { className: 'row' },
+      e.map(function (cell, i) {
+        return React.createElement(
+          'div',
+          {
+            className: cell.type === 'floor' || cell.type === 'door' ? 'cell ' + cell.type : 'cell',
+            style: { opacity: cell.opacity },
+            key: 'cell-' + i
+          },
+          cell.id
+        );
+      })
     );
-  };
+  });
+  return React.createElement(
+    'div',
+    { className: 'app' },
+    React.createElement(
+      'div',
+      { className: 'flex-container' },
+      cells
+    )
+  );
+};
 
-  return Dungeon;
-}(React.Component);
-
-ReactDOM.render(React.createElement(Dungeon, { store: firstStore.dungeon }), document.getElementById("container"));
+ReactDOM.render(React.createElement(Dungeon, { store: firstStore.dungeon }), document.getElementById('container'));
