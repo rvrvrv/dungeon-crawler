@@ -1,4 +1,4 @@
-body {
+body, .flex-container {
   background: #000;
 }
 
@@ -8,11 +8,12 @@ body {
 }
 
 .row {
-  color: #c00;
+  color: #f00;
 }
 
 .flex-container {
   border: 2px solid rgba(0, 0, 0, 0.2);
+  background-color: #111;
 }
 
 .cell {
@@ -23,10 +24,36 @@ body {
 }
 
 .floor {
-  background: #d6d1d1;
-  border: 1px solid #dbd6d6;
+  background: #ccc;
+  border: 1px solid #d1d1d1;
 }
 
-.door {
-  background: #ec0;
+.enemy {
+  background: #a00;
+  border: 1px solid #b40000;
+}
+
+.weapon {
+  background: #ff1;
+  border: 1px solid #ffff1b;
+}
+
+.player {
+  background: #0bb;
+  border: 1px solid #00c5c5;
+}
+
+.potion {
+  background: #a0c;
+  border: 1px solid #b300d6;
+}
+
+.exit {
+  background: #0d0;
+  border: 1px solid #00e700;
+}
+
+.boss {
+  background: #f00;
+  border: 1px solid #ff0a0a;
 }

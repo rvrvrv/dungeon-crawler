@@ -1,25 +1,56 @@
-body
+$bg-color: #111
+$floor: #ccc
+$enemy: #a00
+$weapon: #ff1
+$potion: #a0c
+$player: #0bb
+$exit: #0d0
+$boss: #f00
+
+body, .flex-container
   background: #000
-  
+
 .app, .row
   display: flex
   justify-content: center
-  
+
 .row
-  color: #c00
-    
+  color: #f00
+
 .flex-container
   border: 2px solid rgba(0,0,0,0.2)
-    
+  background-color: $bg-color
+
 .cell
   height: 1em
   width: 1em
   border: 1px solid #310
   background: #420
-  
+
 .floor
-  background: #d6d1d1
-  border: 1px solid lighten(#d6d1d1, 2%)
-  
-.door
-  background: #ec0
+  background: $floor
+  border: 1px solid lighten($floor, 2%)
+
+.enemy
+  background: $enemy
+  border: 1px solid lighten($enemy, 2%)
+
+.weapon
+  background: $weapon
+  border: 1px solid lighten($weapon, 2%)
+
+.player
+  background: $player
+  border: 1px solid lighten($player, 2%)
+
+.potion
+  background: $potion
+  border: 1px solid lighten($potion, 2%)
+
+.exit
+  background: $exit
+  border: 1px solid lighten($exit, 2%)
+
+.boss
+  background: $boss
+  border: 1px solid lighten($boss, 2%)
