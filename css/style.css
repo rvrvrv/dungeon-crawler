@@ -1,3 +1,7 @@
+body {
+  background: #000;
+}
+
 .app, .row {
   display: flex;
   justify-content: center;
@@ -8,14 +12,14 @@
 }
 
 .flex-container {
-  border: 1px solid rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(0, 0, 0, 0.2);
 }
 
 .cell {
   height: 1em;
   width: 1em;
-  border: 1px solid #2d2d2d;
-  background: #0c0;
+  border: 1px solid #310;
+  background: #420;
 }
 
 .floor {
@@ -24,5 +28,5 @@
 }
 
 .door {
-  background: #c00;
+  background: #ec0;
 }
