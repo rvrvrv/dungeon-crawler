@@ -1,4 +1,4 @@
-// Initial room params
+// Initial dungeon params
 const gridHeight = 30;
 const gridWidth = 40;
 const maxRooms = 15;
@@ -144,7 +144,10 @@ const createEntities = (gameMap, lvl = 1) => {
   // Create player
   const players = [{ type: 'player' }];
   // Create 5 potions
-  const potions = Array(5).fill({ type: 'potion' });
+  const potions = [];
+  for (let i = 0; i < 5; i++) {
+    potions.push({ type: 'potion' });
+  }
   // Define weapon types
   const weaponTypes = [
     { name: 'Pistol', damage: 13 },
@@ -203,6 +206,19 @@ const firstStore = {
 const Dungeon = (props) => {
   const { entities, playerPosition } = props.entities;
   const [playerX, playerY] = playerPosition;
+  // Fog mode
+  entities.map((row, i) => row.map((cell, j) => {
+    // Calculate distance of cell from player
+    const dist = Math.abs(playerY - i) + Math.abs(playerX - j);
+    // Make faraway cells less visible
+    cell.opacity =
+        (dist > 14) ? 0
+          : (dist > 8) ? (120 / Math.pow(2, dist))
+            : (dist > 7) ? 0.7
+              : (dist > 6) ? 0.9
+                : 1;
+    return cell;
+  }));
 
   const cells = entities.map((e, eIdx) => (
     <div className="row" key={Date.now() + eIdx}>
