@@ -1,8 +1,16 @@
 'use strict';
 
+var _class, _temp;
+
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
-// Initial room params
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+// Initial dungeon params
 var gridHeight = 30;
 var gridWidth = 40;
 var maxRooms = 15;
@@ -108,8 +116,10 @@ var createDungeon = function createDungeon() {
     roomValues.forEach(function (room) {
       // If room placement is valid, add it to the grid
       if (validRoomPlacement(grid, room)) {
-        grid = placeCells(grid, room); // Place room in grid
-        grid = placeCells(grid, { x: room.doorX, y: room.doorY }, 'door'); // Place door
+        // Place entire room in grid
+        grid = placeCells(grid, room);
+        // Place door to connect rooms
+        grid = placeCells(grid, { x: room.doorX, y: room.doorY }, 'door');
         placedRooms.push(room); // Update placedRooms for next seed
       }
     });
@@ -166,7 +176,10 @@ var createEntities = function createEntities(gameMap) {
   // Create player
   var players = [{ type: 'player' }];
   // Create 5 potions
-  var potions = Array(5).fill({ type: 'potion' });
+  var potions = [];
+  for (var i = 0; i < 5; i++) {
+    potions.push({ type: 'potion' });
+  }
   // Define weapon types
   var weaponTypes = [{ name: 'Pistol', damage: 13 }, { name: 'Rifle', damage: 17 }, { name: '2x Pistol', damage: 26 }, { name: '2x Rifle', damage: 34 }, { name: 'Shotgun', damage: 38 }, { name: 'Rail Gun', damage: 42 }, { name: 'Cannon', damage: 46 }, { name: 'Monster Blaster', damage: 50 }];
   // Limit list of available weapons to current level
@@ -196,9 +209,12 @@ var createEntities = function createEntities(gameMap) {
     }
   });
 
-  // Replace door cells with floor cells
+  // Update floors and doors
   for (var i = 0; i < gameMap.length; i++) {
     for (var j = 0; j < gameMap[0].length; j++) {
+      // Choose random floor opacity
+      if (gameMap[i][j].type === 'floor') gameMap[i][j].opacity = randomInt([86, 90]) / 100;
+      // Change door cell to floor cell
       if (gameMap[i][j].type === 'door') gameMap[i][j].type = 'floor';
     }
   }
@@ -207,31 +223,230 @@ var createEntities = function createEntities(gameMap) {
   return { entities: gameMap, playerPosition: playerPosition };
 };
 
-// Redux store
-var dungeon = createDungeon();
-var firstStore = {
-  entities: createEntities(dungeon)
+// REDUX
+var BATCH_ACTIONS = 'BATCH_ACTIONS';
+var CHANGE_ENTITY = 'CHANGE_ENTITY';
+var CHANGE_PLAYER_POSITION = 'CHANGE_PLAYER_POSITION';
+var CREATE_LVL = 'CREATE_LVL';
+var SET_DUNGEON_LVL = 'SET_DUNGEON_LVL';
+
+var initialState = {
+  entities: [[]],
+  dungeonLvl: 0,
+  playerPosition: []
 };
 
-// Dungeon
-var Dungeon = function Dungeon(props) {
-  var _props$entities = props.entities;
-  var entities = _props$entities.entities;
-  var playerPosition = _props$entities.playerPosition;
-  var playerX = playerPosition[0];
-  var playerY = playerPosition[1];
+// Reducer
+function createBoard() {
+  var state = arguments.length <= 0 || arguments[0] === undefined ? initialState : arguments[0];
+  var _ref5 = arguments[1];
+  var type = _ref5.type;
+  var payload = _ref5.payload;
 
-  var cells = entities.map(function (e, eIdx) {
+  switch (type) {
+    case CHANGE_ENTITY:
+      {
+        var _y, _React$addons$update;
+
+        // Create a new entity
+        var _payload$coords = payload.coords;
+        var x = _payload$coords[0];
+        var y = _payload$coords[1];
+
+        var entities = React.addons.update(state.entities, (_React$addons$update = {}, _React$addons$update[y] = (_y = {}, _y[x] = { $set: payload.entity }, _y), _React$addons$update));
+        return _extends({}, state, { entities: entities });
+      }
+    case CHANGE_PLAYER_POSITION:
+      {
+        return _extends({}, state, { playerPosition: payload });
+      }
+    case CREATE_LVL:
+      {
+        return _extends({}, state, {
+          playerPosition: payload.playerPosition,
+          entities: payload.entities
+        });
+      }
+    case SET_DUNGEON_LVL:
+      {
+        return _extends({}, state, { dungeonLvl: payload });
+      }
+    default:
+      return state;
+  }
+}
+
+// Actions
+var changeEntity = function changeEntity(entity, coords) {
+  return {
+    type: CHANGE_ENTITY,
+    payload: { entity: entity, coords: coords }
+  };
+};
+
+var changePlayerPosition = function changePlayerPosition(payload) {
+  return {
+    type: CHANGE_PLAYER_POSITION,
+    payload: payload
+  };
+};
+
+var createLvl = function createLvl(lvl) {
+  return {
+    type: CREATE_LVL,
+    payload: createEntities(createDungeon(), lvl)
+  };
+};
+
+var setDungeonLvl = function setDungeonLvl(payload) {
+  return {
+    type: SET_DUNGEON_LVL,
+    payload: payload
+  };
+};
+
+var batchActions = function batchActions(actions) {
+  return {
+    type: BATCH_ACTIONS,
+    payload: actions
+  };
+};
+
+// Function dispatch multiple actions efficiently
+function enableBatching(reducer) {
+  return function batchingReducer(state, action) {
+    switch (action.type) {
+      case BATCH_ACTIONS:
+        return action.payload.reduce(reducer, state);
+      default:
+        return reducer(state, action);
+    }
+  };
+}
+// Create initial store and set game to Level 1
+var store = Redux.createStore(enableBatching(createBoard));
+store.dispatch(createLvl(1));
+store.dispatch(setDungeonLvl(1));
+
+var App = (_temp = _class = function (_React$Component) {
+  _inherits(App, _React$Component);
+
+  function App() {
+    _classCallCheck(this, App);
+
+    return _possibleConstructorReturn(this, _React$Component.apply(this, arguments));
+  }
+
+  // Respond to player input
+
+  App.prototype.componentDidMount = function componentDidMount() {
+    var _this2 = this;
+
+    // Listen for keypress
+    window.addEventListener('keydown', App.keydown);
+    // Re-render after each store update
+    this.unsubscribe = store.subscribe(function () {
+      return _this2.forceUpdate();
+    });
+  };
+
+  // Capture user input
+
+  App.prototype.componentWillUnmount = function componentWillUnmount() {
+    // Upon unmount, remove event listener and unsubscribe
+    window.removeEventListener('keydown', App.keydown);
+    this.unsubscribe();
+  };
+
+  App.prototype.render = function render() {
+    var _store$getState = store.getState();
+
+    var entities = _store$getState.entities;
+    var playerPosition = _store$getState.playerPosition;
+
     return React.createElement(
       'div',
-      { className: 'row', key: Date.now() + eIdx },
-      e.map(function (cell, i) {
+      { className: 'app' },
+      React.createElement(Dungeon, {
+        entities: entities,
+        playerPosition: playerPosition
+      })
+    );
+  };
+
+  return App;
+}(React.Component), _class.playerInput = function (vector) {
+  var state = store.getState();
+  var _state$playerPosition = state.playerPosition;
+  var x = _state$playerPosition[0];
+  var y = _state$playerPosition[1];
+  var vectorX = vector[0];
+  var vectorY = vector[1];
+
+  var newPosition = [x + vectorX, y + vectorY];
+  var newPlayer = state.entities[y][x];
+  var destination = state.entities[y + vectorY][x + vectorX];
+  // Allow player to move onto floor, potion, weapon, and exit spaces
+  if (destination.type && destination.type !== 'enemy' && destination.type !== 'boss') {
+    // Perform entity and player-position changes via batchActions
+    store.dispatch(batchActions([changeEntity({ type: 'floor' }, [x, y]), changeEntity(newPlayer, newPosition), changePlayerPosition(newPosition)]));
+  }
+}, _class.keydown = function (e) {
+  switch (e.keyCode) {
+    // Up or W
+    case 38:
+    case 87:
+      App.playerInput([0, -1]);
+      break;
+    // Down or S
+    case 40:
+    case 83:
+      App.playerInput([0, 1]);
+      break;
+    // Left or A
+    case 37:
+    case 65:
+      App.playerInput([-1, 0]);
+      break;
+    // Right or D
+    case 39:
+    case 68:
+      App.playerInput([1, 0]);
+      break;
+    default:
+  }
+}, _temp);
+
+// Dungeon
+
+var Dungeon = function Dungeon(props) {
+  var entities = props.entities;
+  var playerPosition = props.playerPosition;
+  var x = playerPosition[0];
+  var y = playerPosition[1];
+  // Fog mode
+
+  entities.map(function (row, i) {
+    return row.map(function (cell, j) {
+      // Calculate distance of cell from player
+      var dist = Math.abs(y - i) + Math.abs(x - j);
+      // Make faraway cells less visible
+      cell.opacity = dist > 16 ? 0 : dist > 8 ? 250 / Math.pow(2, dist) : dist > 7 ? 0.7 : dist > 6 ? 0.9 : 1;
+      return cell;
+    });
+  });
+
+  var cells = entities.map(function (entity, eIdx) {
+    return React.createElement(
+      'div',
+      { className: 'row', key: 'row-' + eIdx },
+      entity.map(function (cell, cIdx) {
         return React.createElement(
           'div',
           {
             className: cell.type ? 'cell ' + cell.type : 'cell',
             style: { opacity: cell.opacity },
-            key: 'cell-' + i
+            key: 'cell-' + cIdx
           },
           cell.id
         );
@@ -240,13 +455,9 @@ var Dungeon = function Dungeon(props) {
   });
   return React.createElement(
     'div',
-    { className: 'app' },
-    React.createElement(
-      'div',
-      { className: 'flex-container' },
-      cells
-    )
+    { className: 'flex-container' },
+    cells
   );
 };
 
-ReactDOM.render(React.createElement(Dungeon, { entities: firstStore.entities }), document.getElementById('container'));
+ReactDOM.render(React.createElement(App, null), document.getElementById('container'));

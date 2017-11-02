@@ -39,8 +39,7 @@ const createDungeon = () => {
   const placeCells = (
     grid,
     { x, y, width = 1, height = 1, id },
-    type = 'floor'
-  ) => {
+    type = 'floor') => {
     // Iterate over entire grid
     for (let i = y; i < y + height; i++) {
       for (let j = x; j < x + width; j++) {
@@ -90,8 +89,10 @@ const createDungeon = () => {
     roomValues.forEach((room) => {
       // If room placement is valid, add it to the grid
       if (validRoomPlacement(grid, room)) {
-        grid = placeCells(grid, room); // Place room in grid
-        grid = placeCells(grid, { x: room.doorX, y: room.doorY }, 'door'); // Place door
+        // Place entire room in grid
+        grid = placeCells(grid, room);
+        // Place door to connect rooms
+        grid = placeCells(grid, { x: room.doorX, y: room.doorY }, 'door');
         placedRooms.push(room); // Update placedRooms for next seed
       }
     });
@@ -185,9 +186,12 @@ const createEntities = (gameMap, lvl = 1) => {
     }
   });
 
-  // Replace door cells with floor cells
+  // Update floors and doors
   for (let i = 0; i < gameMap.length; i++) {
     for (let j = 0; j < gameMap[0].length; j++) {
+      // Choose random floor opacity
+      if (gameMap[i][j].type === 'floor') gameMap[i][j].opacity = randomInt([86, 90]) / 100;
+      // Change door cell to floor cell
       if (gameMap[i][j].type === 'door') gameMap[i][j].type = 'floor';
     }
   }
@@ -196,33 +200,183 @@ const createEntities = (gameMap, lvl = 1) => {
   return { entities: gameMap, playerPosition };
 };
 
-// Redux store
-const dungeon = createDungeon();
-const firstStore = {
-  entities: createEntities(dungeon)
+// REDUX
+const BATCH_ACTIONS = 'BATCH_ACTIONS';
+const CHANGE_ENTITY = 'CHANGE_ENTITY';
+const CHANGE_PLAYER_POSITION = 'CHANGE_PLAYER_POSITION';
+const CREATE_LVL = 'CREATE_LVL';
+const SET_DUNGEON_LVL = 'SET_DUNGEON_LVL';
+
+const initialState = {
+  entities: [[]],
+  dungeonLvl: 0,
+  playerPosition: []
 };
+
+// Reducer
+function createBoard(state = initialState, { type, payload }) {
+  switch (type) {
+    case CHANGE_ENTITY: {
+      // Create a new entity
+      const [x, y] = payload.coords;
+      const entities = React.addons.update(state.entities, {
+        [y]: { [x]: { $set: payload.entity } }
+      });
+      return { ...state, entities };
+    }
+    case CHANGE_PLAYER_POSITION: {
+      return { ...state, playerPosition: payload };
+    }
+    case CREATE_LVL: {
+      return {
+        ...state,
+        playerPosition: payload.playerPosition,
+        entities: payload.entities
+      };
+    }
+    case SET_DUNGEON_LVL: {
+      return { ...state, dungeonLvl: payload };
+    }
+    default:
+      return state;
+  }
+}
+
+// Actions
+const changeEntity = (entity, coords) => ({
+  type: CHANGE_ENTITY,
+  payload: { entity, coords }
+});
+
+const changePlayerPosition = payload => ({
+  type: CHANGE_PLAYER_POSITION,
+  payload
+});
+
+const createLvl = lvl => ({
+  type: CREATE_LVL,
+  payload: createEntities(createDungeon(), lvl)
+});
+
+const setDungeonLvl = payload => ({
+  type: SET_DUNGEON_LVL,
+  payload
+});
+
+const batchActions = actions => ({
+  type: BATCH_ACTIONS,
+  payload: actions
+});
+
+// Function dispatch multiple actions efficiently
+function enableBatching(reducer) {
+  return function batchingReducer(state, action) {
+    switch (action.type) {
+      case BATCH_ACTIONS:
+        return action.payload.reduce(reducer, state);
+      default:
+        return reducer(state, action);
+    }
+  };
+}
+// Create initial store and set game to Level 1
+const store = Redux.createStore(enableBatching(createBoard));
+store.dispatch(createLvl(1));
+store.dispatch(setDungeonLvl(1));
+
+class App extends React.Component {
+  // Respond to player input
+  static playerInput = (vector) => {
+    const state = store.getState();
+    const [x, y] = state.playerPosition;
+    const [vectorX, vectorY] = vector;
+    const newPosition = [x + vectorX, y + vectorY];
+    const newPlayer = state.entities[y][x];
+    const destination = state.entities[y + vectorY][x + vectorX];
+    // Allow player to move onto floor, potion, weapon, and exit spaces
+    if (destination.type && destination.type !== 'enemy' && destination.type !== 'boss') {
+      // Perform entity and player-position changes via batchActions
+      store.dispatch(batchActions([
+        changeEntity({ type: 'floor' }, [x, y]),
+        changeEntity(newPlayer, newPosition),
+        changePlayerPosition(newPosition)]));
+    }
+  };
+
+  // Capture user input
+  static keydown = (e) => {
+    switch (e.keyCode) {
+      // Up or W
+      case 38:
+      case 87:
+        App.playerInput([0, -1]);
+        break;
+        // Down or S
+      case 40:
+      case 83:
+        App.playerInput([0, 1]);
+        break;
+        // Left or A
+      case 37:
+      case 65:
+        App.playerInput([-1, 0]);
+        break;
+        // Right or D
+      case 39:
+      case 68:
+        App.playerInput([1, 0]);
+        break;
+      default:
+    }
+  };
+
+  componentDidMount() {
+    // Listen for keypress
+    window.addEventListener('keydown', App.keydown);
+    // Re-render after each store update
+    this.unsubscribe = store.subscribe(() => this.forceUpdate());
+  }
+
+  componentWillUnmount() {
+    // Upon unmount, remove event listener and unsubscribe
+    window.removeEventListener('keydown', App.keydown);
+    this.unsubscribe();
+  }
+
+  render() {
+    const { entities, playerPosition } = store.getState();
+    return (
+      <div className="app">
+        <Dungeon
+          entities={entities}
+          playerPosition={playerPosition}
+        />
+      </div>
+    );
+  }
+}
 
 // Dungeon
 const Dungeon = (props) => {
-  const { entities, playerPosition } = props.entities;
-  const [playerX, playerY] = playerPosition;
+  const { entities, playerPosition } = props;
+  const [x, y] = playerPosition;
   // Fog mode
   entities.map((row, i) => row.map((cell, j) => {
     // Calculate distance of cell from player
-    const dist = Math.abs(playerY - i) + Math.abs(playerX - j);
+    const dist = Math.abs(y - i) + Math.abs(x - j);
     // Make faraway cells less visible
     cell.opacity =
-        (dist > 14) ? 0
-          : (dist > 8) ? (120 / Math.pow(2, dist))
-            : (dist > 7) ? 0.7
-              : (dist > 6) ? 0.9
-                : 1;
+          (dist > 16) ? 0
+            : (dist > 8) ? (250 / Math.pow(2, dist))
+              : (dist > 7) ? 0.7
+                : (dist > 6) ? 0.9
+                  : 1;
     return cell;
   }));
 
-  const cells = entities.map((e, eIdx) => (
-    <div className="row" key={Date.now() + eIdx}>
-      {e.map((cell, i) => (
+  const cells = entities.map((entity, eIdx) => (
+    <div className="row" key={`row-${eIdx}`}>
+      {entity.map((cell, cIdx) => (
         <div
           className={
             cell.type
@@ -230,21 +384,17 @@ const Dungeon = (props) => {
               : 'cell'
           }
           style={{ opacity: cell.opacity }}
-          key={`cell-${i}`}
+          key={`cell-${cIdx}`}
         >
           {cell.id}
         </div>
       ))}
     </div>
   ));
-  return (
-    <div className="app">
-      <div className="flex-container">{cells}</div>
-    </div>
-  );
+  return <div className="flex-container">{cells}</div>;
 };
 
 ReactDOM.render(
-  <Dungeon entities={firstStore.entities} />,
+  <App />,
   document.getElementById('container')
 );
