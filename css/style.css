@@ -7,53 +7,48 @@ body, .flex-container {
   justify-content: center;
 }
 
-.row {
-  color: #f00;
-}
-
 .flex-container {
-  border: 2px solid rgba(0, 0, 0, 0.2);
-  background-color: #111;
+  border: 5px solid rgba(0, 0, 0, 0.2);
 }
 
 .cell {
-  height: 1em;
-  width: 1em;
-  border: 1px solid #310;
-  background: #420;
+  height: 0.9em;
+  width: 0.9em;
+  background: #332000;
+  border: 2px solid #291a00;
 }
 
 .floor {
   background: #ccc;
-  border: 1px solid #d1d1d1;
+  border: 2px solid #cecece;
 }
 
 .enemy {
   background: #a00;
-  border: 1px solid #b40000;
+  border: 2px solid #9b0000;
 }
 
 .weapon {
   background: #ff1;
-  border: 1px solid #ffff1b;
+  border: 2px solid #ffff1b;
 }
 
 .player {
   background: #0bb;
-  border: 1px solid #00c5c5;
+  border: 2px double #55ffff;
 }
 
 .potion {
   background: #a0c;
-  border: 1px solid #b300d6;
+  border: 2px solid #b700db;
 }
 
 .exit {
   background: #0d0;
-  border: 1px solid #00e700;
+  border: 2px solid #00e700;
 }
 
 .boss {
   background: #f00;
-  border: 1px solid #ff0a0a;
+  border: 2px solid #ff0a0a;
 }
