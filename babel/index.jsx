@@ -1,9 +1,11 @@
-// Initial dungeon params
-const gridHeight = 30;
-const gridWidth = 40;
+// INITIAL SETUP
+// Dungeon params
+const gridHeight = 40;
+const gridWidth = 60;
 const maxRooms = 15;
-const roomSizeRange = [4, 14];
+const roomSizeRange = [5, 15];
 
+// HELPER FUNCTIONS
 // Generate random integer within range
 function randomInt([min, max]) {
   return Math.floor(Math.random() * ((max - min) + 1)) + min;
@@ -14,6 +16,7 @@ function randomRoom(range) {
   return { height: randomInt(range), width: randomInt(range) };
 }
 
+// DUNGEON CREATION
 // Generate the entire dungeon
 const createDungeon = () => {
   // Ensure room is within free space in grid
@@ -35,7 +38,7 @@ const createDungeon = () => {
     return true;
   };
 
-    // Place cells in the grid
+  // Place cells in the grid
   const placeCells = (
     grid,
     { x, y, width = 1, height = 1, id },
@@ -202,10 +205,16 @@ const createEntities = (gameMap, lvl = 1) => {
 
 // REDUX
 const BATCH_ACTIONS = 'BATCH_ACTIONS';
+const ADD_WEAPON = 'ADD_WEAPON';
+const ADD_XP = 'ADD_XP';
 const CHANGE_ENTITY = 'CHANGE_ENTITY';
+const CHANGE_HEALTH = 'CHANGE_HEALTH';
 const CHANGE_PLAYER_POSITION = 'CHANGE_PLAYER_POSITION';
 const CREATE_LVL = 'CREATE_LVL';
+const NEW_MSG = 'NEW_MSG';
+const RESTART = 'RESTART';
 const SET_DUNGEON_LVL = 'SET_DUNGEON_LVL';
+const TOGGLE_FOG_MODE = 'TOGGLE_FOG_MODE';
 
 const initialState = {
   entities: [[]],
@@ -242,10 +251,30 @@ function createBoard(state = initialState, { type, payload }) {
   }
 }
 
-// Actions
+// Action Creators
+const batchActions = actions => ({
+  type: BATCH_ACTIONS,
+  payload: actions
+});
+
+const addWeapon = payload => ({
+  type: ADD_WEAPON,
+  payload
+});
+
+const addXP = payload => ({
+  type: ADD_XP,
+  payload
+});
+
 const changeEntity = (entity, coords) => ({
   type: CHANGE_ENTITY,
   payload: { entity, coords }
+});
+
+const changeHealth = payload => ({
+  type: CHANGE_HEALTH,
+  payload
 });
 
 const changePlayerPosition = payload => ({
@@ -258,17 +287,25 @@ const createLvl = lvl => ({
   payload: createEntities(createDungeon(), lvl)
 });
 
+const newMsg = payload => ({
+  type: NEW_MSG,
+  payload
+});
+
+const restart = () => ({
+  type: RESTART
+});
+
 const setDungeonLvl = payload => ({
   type: SET_DUNGEON_LVL,
   payload
 });
 
-const batchActions = actions => ({
-  type: BATCH_ACTIONS,
-  payload: actions
+const toggleFogMode = () => ({
+  type: TOGGLE_FOG_MODE
 });
 
-// Function dispatch multiple actions efficiently
+// Function to dispatch multiple actions efficiently
 function enableBatching(reducer) {
   return function batchingReducer(state, action) {
     switch (action.type) {
@@ -279,82 +316,255 @@ function enableBatching(reducer) {
     }
   };
 }
+
 // Create initial store and set game to Level 1
 const store = Redux.createStore(enableBatching(createBoard));
 store.dispatch(createLvl(1));
 store.dispatch(setDungeonLvl(1));
 
-class App extends React.Component {
-  // Respond to player input
-  static playerInput = (vector) => {
-    const state = store.getState();
-    const [x, y] = state.playerPosition;
-    const [vectorX, vectorY] = vector;
-    const newPosition = [x + vectorX, y + vectorY];
-    const newPlayer = state.entities[y][x];
-    const destination = state.entities[y + vectorY][x + vectorX];
-    // Allow player to move onto floor, potion, weapon, and exit spaces
-    if (destination.type && destination.type !== 'enemy' && destination.type !== 'boss') {
-      // Perform entity and player-position changes via batchActions
-      store.dispatch(batchActions([
-        changeEntity({ type: 'floor' }, [x, y]),
-        changeEntity(newPlayer, newPosition),
-        changePlayerPosition(newPosition)]));
-    }
-  };
 
-  // Capture user input
-  static keydown = (e) => {
-    switch (e.keyCode) {
-      // Up or W
-      case 38:
-      case 87:
-        App.playerInput([0, -1]);
-        break;
-        // Down or S
-      case 40:
-      case 83:
-        App.playerInput([0, 1]);
-        break;
-        // Left or A
-      case 37:
-      case 65:
-        App.playerInput([-1, 0]);
-        break;
-        // Right or D
-      case 39:
-      case 68:
-        App.playerInput([1, 0]);
-        break;
-      default:
+// Respond to player input, utilizing Redux Thunk
+const playerInput = ([vectorX, vectorY]) => (dispatch, getState) => {
+  const { grid, player } = getState();
+  const [x, y] = grid.playerPosition; // .slice(0)? Current position
+  const newPosition = [x + vectorX, y + vectorY]; // Next position
+  const newPlayer = grid.entities[y][x]; // Player on map
+  const destination = grid.entities[y + vectorY][x + vectorX]; // What's in next position
+  const actions = []; // Prepare to store actions for batching and dispatching
+  // Allow player to move onto floor, potion, weapon, and exit spaces
+  if (destination.type
+          && destination.type !== 'enemy'
+          && destination.type !== 'boss') {
+    // Store entity and player-position changes
+    actions.push(
+      changeEntity({ type: 'floor' }, [x, y]),
+      changeEntity(newPlayer, newPosition),
+      changePlayerPosition(newPosition));
+  }
+  // Respond based on destination
+  switch (destination.type) {
+    case 'boss':
+    case 'enemy': {
+      const playerLvl = Math.floor(player.xp / 100);
+      // Player attacks enemy
+      const enemyDamage = Math.floor(player.weapon.damage * (randomInt([10, 13]) / 10) * playerLvl);
+      destination.health -= enemyDamage;
+      // If enemy is alive, it attacks player
+      if (destination.health > 0) {
+        const playerDamage = Math.floor(randomInt([4, 7]) * destination.lvl);
+        // Store changes for batching and dispatching
+        actions.push(
+          changeEntity(destination, newPosition),
+          changeHealth(player.health - playerDamage),
+          newMessage(`You attacked the ${destination.type} and caused ${enemyDamage} damage. The ${destination.type} struck back for ${playerDamage} of your health. The ${destination.type} survived and has ${destination.health} health remaining.`));
+        // If player is dead, end and restart the game
+        if (player.health - playerDamage <= 0) {
+          dispatch(changeHealth(0));
+          setTimeout(() => dispatch(setDungeonLvl('death')), 250);
+          setTimeout(() => dispatch(newMessage('Oh no! You\'re dead. Try again, if you dare.')), 1000);
+          setTimeout(() => dispatch(batchActions([restart(), createLvl(1), setDungeonLvl(1)])), 6000);
+          return;
+        }
+      }
+      // If player wins the fight, respond accordingly
+      if (destination.health <= 0) {
+        // First, increase XP and move into the new position
+        actions.push(
+          addXP(10),
+          changeEntity({ type: 'floor' }, [x, y]),
+          changeEntity(newPlayer, newPosition),
+          changePlayerPosition(newPosition),
+          newMessage(`You dealt ${enemyDamage} damage and won the battle! Way to go!`));
+        // If player defeats a boss, end and restart the game
+        if (destination.type === 'boss') {
+          setTimeout(() => dispatch(setDungeonLvl('victory')), 250);
+          setTimeout(() => dispatch(newMessage('Better yet, you beat the boss!')), 1000);
+          setTimeout(() => dispatch(newMessage('...In other words, you won the game!')), 2000);
+          setTimeout(() => dispatch(batchActions([restart(), createLvl(1), setDungeonLvl(1)])), 7000);
+        }
+        // If player defeats a regular enemy, continue the game
+        else {
+          setTimeout(() => dispatch(newMessage('You are 10 XP stronger.')), 2000);
+          if ((player.xp + 10) % 100 === 0) { setTimeout(() => dispatch(newMessage('You leveled up!')), 5000); }
+        }
+      }
+      break;
     }
-  };
+    // next cases
+    default:
+      break;
+  }
+  // Dispatch all of the actions in response to player input
+  dispatch(batchActions(actions));
+};
+
+// Opening messages at beginning of each game
+const openingMessages = () => ((dispatch) => {
+  dispatch(newMessage('Enter the dungeon!'));
+  setTimeout(() => dispatch(newMessage('Explore, battle, and survive!')), 2000);
+});
+
+// Restart the game
+const restartGame = () => ((dispatch) => {
+  dispatch(newMessage('Restarting the game...'));
+  setTimeout(() => dispatch(batchActions([restart(), createLvl(1), setDungeonLvl(1)])), 1000);
+});
+
+// REACT COMPONENTS
+const Cell = ({ cell, distance, visible, zone }) => {
+  if (visible) {
+    // Make faraway cells less visible
+      cell.opacity =
+            (distance > 16) ? 0
+              : (distance > 8) ? (250 / Math.pow(2, distance))
+                : (distance > 7) ? 0.7
+                  : (distance > 6) ? 0.9
+                    : 1;
+  }
+  return (
+    <div
+      className={
+        cell.type
+          ? `cell ${cell.type}`
+          : `cell back-${zone}`
+          }
+          style={{ opacity: cell.opacity }}
+      />
+  );
+};
+
+const Header = ({lvl}) => (
+  <div className='header-bg'>
+    <h1 className={`header-${lvl}`}>DC</h1>
+  </div>
+);
+
+const Score = ({ iconClass, title, value }) => (
+  <div className="score-item">
+    <div className={`icon cell ${iconClass}`} />
+    <span className="score-label">{`${title}: ${value}`}</span>
+  </div>
+);
+
+
+class Game extends React.Component {
+  constructor() {
+    super();
+    this.state = {
+      vpWidth: 0,
+      vpHeight: 0
+    };
+
+    this.vpHeightOffset = 5;
+    this.vpHeightMin = 22;
+    this.vpHeightRatio = 21;
+    this.vpWidthRatio = 30;
+  }
+
+  componentWillMount() {
+    // Set initial viewport size
+    this.setState({
+      vpWidth: window.innerWidth / this.vpWidthRatio,
+      vpHeight: Math.max(this.vpHeightMin, (window.innerHeight / this.vpHeightRadio) - this.vpHeightOffset)
+    });
+    // Set initial level
+    this.props.createLvl();
+    this.props.setDungeonLvl(1);
+  }
 
   componentDidMount() {
-    // Listen for keypress
-    window.addEventListener('keydown', App.keydown);
-    // Re-render after each store update
-    this.unsubscribe = store.subscribe(() => this.forceUpdate());
+    window.addEventListener('keydown', this.handleKeyPress);
+    window.addEventListener('resize', this.handleResize);
+    this.props.triggerOpeningMessages();
   }
 
   componentWillUnmount() {
-    // Upon unmount, remove event listener and unsubscribe
-    window.removeEventListener('keydown', App.keydown);
-    this.unsubscribe();
+    window.removeEventListener('keydown', this.handleKeyPress);
+    window.removeEventListener('resize', this.handleResize);
   }
 
+   // Handle user input
+  const handleKeyPress = (e) => {
+    // Only respond during active game
+    if (typeof this.props.grid.dungeonLvl === 'number') {
+      switch (e.keyCode) {
+        // Up or W
+        case 38:
+        case 87:
+          this.props.playerInput([0, -1]);
+          break;
+          // Down or S
+        case 40:
+        case 83:
+          this.props.playerInput([0, 1]);
+          break;
+          // Left or A
+        case 37:
+        case 65:
+          this.props.playerInput([-1, 0]);
+          break;
+          // Right or D
+        case 39:
+        case 68:
+          this.props.playerInput([1, 0]);
+          break;
+        default:
+          return;
+      }
+    }
+  };
+
+  // Handle window resizing
+  const handleResize = (e) => {
+    // Set initial viewport size
+    this.setState({
+      vpWidth: e.target.innerWidth / this.vpWidthRatio,
+      vpHeight: Math.max(this.vpHeightMin, (e.target.innerHeight / this.vpHeightRadio) - this.vpHeightOffset)
+    });
+  };
+
   render() {
-    const { entities, playerPosition } = store.getState();
-    return (
-      <div className="app">
-        <Dungeon
-          entities={entities}
-          playerPosition={playerPosition}
-        />
-      </div>
-    );
+    // Maintain even viewport width and height
+    const vpWidth = this.state.vpWidth - (this.state.vpWidth % 2);
+    const vpHeight = this.state.vpHeight - (this.state.vpHeight % 2);
+    // Store props
+    const { entities } = this.props.grid;
+    const [ playerX, playerY ] = this.props.grid.playerPosition;
+
+    // TO-DO: Clamp cells within viewport
+
+    // Create new array of entities with distance property (for fog mode)
+    const newEntities = entities.map((row, i) => row.map((cell, j) => {
+      // Calculate distance of cell from player
+      cell.distance = Math.abs(playerY - i) + Math.abs(playerX - j);
+      return cell;
+    }));
+
+    // Create all cells within viewport
+    const cells = newEntities
+      .filter((row, i) => i >= top && i < bottom)
+      .map((row, i) => (
+        <div key={`row-${i}`} className='row'>
+          {
+            row
+              .filter((row, i) => i >= left && i < right)
+              .map((cell, j) => (
+                <Cell
+                  key={`cell-${j}`}
+                  cell={cell}
+                  distance={cell.distance}
+                  zone={this.props.grid.dungeonLvl}
+                  visible={this.props.fogMode}
+                  />
+            ));
+          }
+          </div>
+      ));
+
+    return <div className="grid-wrapper">{cells}</div>;
   }
 }
+
 
 // Dungeon
 const Dungeon = (props) => {
