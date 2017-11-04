@@ -1,8 +1,12 @@
 'use strict';
 
-var _class, _temp;
-
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -10,16 +14,21 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-// Initial dungeon params
-var gridHeight = 30;
-var gridWidth = 40;
-var maxRooms = 15;
-var roomSizeRange = [4, 14];
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
+// INITIAL SETUP
+// Dungeon params
+var gridHeight = 40;
+var gridWidth = 60;
+var maxRooms = 15;
+var roomSizeRange = [5, 15];
+
+// HELPER FUNCTIONS
 // Generate random integer within range
 function randomInt(_ref) {
-  var min = _ref[0];
-  var max = _ref[1];
+  var _ref2 = _slicedToArray(_ref, 2),
+      min = _ref2[0],
+      max = _ref2[1];
 
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -29,16 +38,26 @@ function randomRoom(range) {
   return { height: randomInt(range), width: randomInt(range) };
 }
 
+// Clamp number within range
+function clamp(num, _ref3) {
+  var _ref4 = _slicedToArray(_ref3, 2),
+      min = _ref4[0],
+      max = _ref4[1];
+
+  return Math.min(Math.max(min, num), max);
+}
+
+// DUNGEON CREATION
 // Generate the entire dungeon
 var createDungeon = function createDungeon() {
   // Ensure room is within free space in grid
-  var validRoomPlacement = function validRoomPlacement(grid, _ref2) {
-    var x = _ref2.x;
-    var y = _ref2.y;
-    var _ref2$width = _ref2.width;
-    var width = _ref2$width === undefined ? 1 : _ref2$width;
-    var _ref2$height = _ref2.height;
-    var height = _ref2$height === undefined ? 1 : _ref2$height;
+  var validRoomPlacement = function validRoomPlacement(grid, _ref5) {
+    var x = _ref5.x,
+        y = _ref5.y,
+        _ref5$width = _ref5.width,
+        width = _ref5$width === undefined ? 1 : _ref5$width,
+        _ref5$height = _ref5.height,
+        height = _ref5$height === undefined ? 1 : _ref5$height;
 
     // Check grid borders
     if (x < 1 || y < 1 || x + width > grid[0].length - 1 || y + height > grid.length - 1) {
@@ -55,20 +74,19 @@ var createDungeon = function createDungeon() {
   };
 
   // Place cells in the grid
-  var placeCells = function placeCells(grid, _ref3) {
-    var x = _ref3.x;
-    var y = _ref3.y;
-    var _ref3$width = _ref3.width;
-    var width = _ref3$width === undefined ? 1 : _ref3$width;
-    var _ref3$height = _ref3.height;
-    var height = _ref3$height === undefined ? 1 : _ref3$height;
-    var id = _ref3.id;
-    var type = arguments.length <= 2 || arguments[2] === undefined ? 'floor' : arguments[2];
+  var placeCells = function placeCells(grid, _ref6) {
+    var x = _ref6.x,
+        y = _ref6.y,
+        _ref6$width = _ref6.width,
+        width = _ref6$width === undefined ? 1 : _ref6$width,
+        _ref6$height = _ref6.height,
+        height = _ref6$height === undefined ? 1 : _ref6$height;
+    var type = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'floor';
 
     // Iterate over entire grid
     for (var i = y; i < y + height; i++) {
       for (var j = x; j < x + width; j++) {
-        grid[i][j] = { type: type, id: id }; // Place cell
+        grid[i][j] = { type: type }; // Place cell
       }
     }
     // Return grid filled with cells
@@ -76,12 +94,12 @@ var createDungeon = function createDungeon() {
   };
 
   // Generate rooms in random positions
-  var createRooms = function createRooms(grid, _ref4) {
-    var x = _ref4.x;
-    var y = _ref4.y;
-    var width = _ref4.width;
-    var height = _ref4.height;
-    var range = arguments.length <= 2 || arguments[2] === undefined ? roomSizeRange : arguments[2];
+  var createRooms = function createRooms(grid, _ref7) {
+    var x = _ref7.x,
+        y = _ref7.y,
+        width = _ref7.width,
+        height = _ref7.height;
+    var range = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : roomSizeRange;
 
     // Room values for each side of seed room
     var roomValues = [];
@@ -128,47 +146,47 @@ var createDungeon = function createDungeon() {
 
   // BUILD THE MAP
   // First, generate grid of empty cells with random opacity
-  var grid = [];
+  var newGrid = [];
   for (var i = 0; i < gridHeight; i++) {
-    grid.push([]);
+    newGrid.push([]);
     for (var j = 0; j < gridWidth; j++) {
-      grid[i].push({ type: 0, opacity: randomInt([40, 90]) / 100 });
+      newGrid[i].push({ type: 0, opacity: randomInt([40, 90]) / 100 });
     }
   }
   // Then, generate and place the first room
   var firstRoom = randomRoom(roomSizeRange);
   firstRoom.x = randomInt([1, gridWidth - roomSizeRange[1] - maxRooms]);
   firstRoom.y = randomInt([1, gridHeight - roomSizeRange[1] - maxRooms]);
-  grid = placeCells(grid, firstRoom);
+  newGrid = placeCells(newGrid, firstRoom);
   // Finally, use firstRoom as seed to fill grid
   var growMap = function growMap(grid, seedRooms) {
-    var counter = arguments.length <= 2 || arguments[2] === undefined ? 1 : arguments[2];
+    var counter = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
 
     // Check to end recursion
     if (counter + seedRooms.length > maxRooms || !seedRooms.length) return grid;
     // Otherwise, create new room
     grid = createRooms(grid, seedRooms.pop());
-    seedRooms.push.apply(seedRooms, grid.placedRooms);
+    seedRooms.push.apply(seedRooms, _toConsumableArray(grid.placedRooms));
     counter += grid.placedRooms.length; // Update counter
     return growMap(grid.grid, seedRooms, counter); // Run recursively
   };
   // When createDungeon is called, run recursive growMap function
-  return growMap(grid, [firstRoom]);
+  return growMap(newGrid, [firstRoom]);
 };
 
 // Create all entities (characters, items, etc.)
 var createEntities = function createEntities(gameMap) {
-  var lvl = arguments.length <= 1 || arguments[1] === undefined ? 1 : arguments[1];
+  var lvl = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
 
   // Prepare to store player's initial position
   var playerPosition = [];
   // Bosses appear after Level 4
   var bosses = [];
-  if (lvl === 4) bosses.push({ health: 400, level: 5, type: 'boss' });
+  if (lvl === 4) bosses.push({ health: 400, lvl: 5, type: 'boss' });
   // Enemies attributes are based on level
   var enemies = [];
   for (var i = 0; i < 7; i++) {
-    enemies.push({ health: lvl * 30 + 40, level: randomInt([Math.max(1, lvl - 1), lvl + 1]), type: 'enemy' });
+    enemies.push({ health: lvl * 30 + 40, lvl: randomInt([Math.max(1, lvl - 1), lvl + 1]), type: 'enemy' });
   }
   // New exits appear before Level 4
   var exits = [];
@@ -177,7 +195,7 @@ var createEntities = function createEntities(gameMap) {
   var players = [{ type: 'player' }];
   // Create 5 potions
   var potions = [];
-  for (var i = 0; i < 5; i++) {
+  for (var _i = 0; _i < 5; _i++) {
     potions.push({ type: 'potion' });
   }
   // Define weapon types
@@ -188,8 +206,10 @@ var createEntities = function createEntities(gameMap) {
   });
   var weapons = [];
   // Randomly generate 3 available weapons
-  for (var i = 0; i < 3; i++) {
-    weapons.push(_extends({}, availableWeapons[randomInt([1, availableWeapons.length]) - 1], { type: 'weapon' }));
+  for (var _i2 = 0; _i2 < 3; _i2++) {
+    var weapon = Object.assign({}, availableWeapons[randomInt([1, availableWeapons.length]) - 1]);
+    weapon.type = 'weapon';
+    weapons.push(weapon);
   }
 
   // Place entities on open floor cells
@@ -210,12 +230,12 @@ var createEntities = function createEntities(gameMap) {
   });
 
   // Update floors and doors
-  for (var i = 0; i < gameMap.length; i++) {
+  for (var _i3 = 0; _i3 < gameMap.length; _i3++) {
     for (var j = 0; j < gameMap[0].length; j++) {
       // Choose random floor opacity
-      if (gameMap[i][j].type === 'floor') gameMap[i][j].opacity = randomInt([86, 90]) / 100;
+      if (gameMap[_i3][j].type === 'floor') gameMap[_i3][j].opacity = randomInt([86, 90]) / 100;
       // Change door cell to floor cell
-      if (gameMap[i][j].type === 'door') gameMap[i][j].type = 'floor';
+      if (gameMap[_i3][j].type === 'door') gameMap[_i3][j].type = 'floor';
     }
   }
 
@@ -225,35 +245,654 @@ var createEntities = function createEntities(gameMap) {
 
 // REDUX
 var BATCH_ACTIONS = 'BATCH_ACTIONS';
+var ADD_WEAPON = 'ADD_WEAPON';
+var ADD_XP = 'ADD_XP';
 var CHANGE_ENTITY = 'CHANGE_ENTITY';
+var CHANGE_HEALTH = 'CHANGE_HEALTH';
 var CHANGE_PLAYER_POSITION = 'CHANGE_PLAYER_POSITION';
 var CREATE_LVL = 'CREATE_LVL';
+var NEW_MSG = 'NEW_MSG';
+var RESTART = 'RESTART';
 var SET_DUNGEON_LVL = 'SET_DUNGEON_LVL';
+var TOGGLE_FOG_MODE = 'TOGGLE_FOG_MODE';
 
-var initialState = {
+// Action Creators
+var batchActions = function batchActions(actions) {
+  return {
+    type: BATCH_ACTIONS,
+    payload: actions
+  };
+};
+
+var addWeapon = function addWeapon(payload) {
+  return {
+    type: ADD_WEAPON,
+    payload: payload
+  };
+};
+
+var addXP = function addXP(payload) {
+  return {
+    type: ADD_XP,
+    payload: payload
+  };
+};
+
+var changeEntity = function changeEntity(entity, coords) {
+  return {
+    type: CHANGE_ENTITY,
+    payload: { entity: entity, coords: coords }
+  };
+};
+
+var changeHealth = function changeHealth(payload) {
+  return {
+    type: CHANGE_HEALTH,
+    payload: payload
+  };
+};
+
+var changePlayerPosition = function changePlayerPosition(payload) {
+  return {
+    type: CHANGE_PLAYER_POSITION,
+    payload: payload
+  };
+};
+
+var _createLvl = function _createLvl(lvl) {
+  return {
+    type: CREATE_LVL,
+    payload: createEntities(createDungeon(), lvl)
+  };
+};
+
+var newMsg = function newMsg(payload) {
+  return {
+    type: NEW_MSG,
+    payload: payload
+  };
+};
+
+var restart = function restart() {
+  return {
+    type: RESTART
+  };
+};
+
+var _setDungeonLvl = function _setDungeonLvl(payload) {
+  return {
+    type: SET_DUNGEON_LVL,
+    payload: payload
+  };
+};
+
+var _toggleFogMode = function _toggleFogMode() {
+  return {
+    type: TOGGLE_FOG_MODE
+  };
+};
+
+// Function to dispatch multiple actions efficiently
+function enableBatching(reducer) {
+  return function batchingReducer(state, action) {
+    switch (action.type) {
+      case BATCH_ACTIONS:
+        return action.payload.reduce(reducer, state);
+      default:
+        return reducer(state, action);
+    }
+  };
+}
+
+// Respond to player input
+var _playerInput = function _playerInput(_ref8) {
+  var _ref9 = _slicedToArray(_ref8, 2),
+      vectorX = _ref9[0],
+      vectorY = _ref9[1];
+
+  return function (dispatch, getState) {
+    var _getState = getState(),
+        grid = _getState.grid,
+        player = _getState.player;
+
+    var _grid$playerPosition$ = grid.playerPosition.slice(0),
+        _grid$playerPosition$2 = _slicedToArray(_grid$playerPosition$, 2),
+        x = _grid$playerPosition$2[0],
+        y = _grid$playerPosition$2[1]; // .slice(0)? Current position
+
+
+    var newPosition = [x + vectorX, y + vectorY]; // Next position
+    var newPlayer = grid.entities[y][x]; // Player on map
+    var destination = grid.entities[y + vectorY][x + vectorX]; // What's in next position
+    var actions = []; // Prepare to store actions for batching and dispatching
+    // Allow player to move onto floor, potion, weapon, and exit spaces
+    if (destination.type && destination.type !== 'enemy' && destination.type !== 'boss') {
+      // Store entity and player-position changes
+      actions.push(changeEntity({ type: 'floor' }, [x, y]), changeEntity(newPlayer, newPosition), changePlayerPosition(newPosition));
+    }
+    // Respond based on destination
+    switch (destination.type) {
+      case 'boss':
+      case 'enemy':
+        {
+          var playerLvl = Math.floor(player.xp / 100);
+          // Player attacks enemy
+          var enemyDamage = Math.floor(player.weapon.damage * (randomInt([10, 13]) / 10) * playerLvl);
+          destination.health -= enemyDamage;
+          // If enemy is alive, it attacks player
+          if (destination.health > 0) {
+            var playerDamage = Math.floor(randomInt([4, 7]) * destination.lvl);
+            // Store changes for batching and dispatching
+            actions.push(changeEntity(destination, newPosition), changeHealth(player.health - playerDamage), newMsg('You attacked the ' + destination.type + ' and caused ' + enemyDamage + ' damage. The ' + destination.type + ' struck back for ' + playerDamage + ' of your health. The ' + destination.type + ' survived and has ' + destination.health + ' health remaining.'));
+            // If player is dead, end and restart the game
+            if (player.health - playerDamage <= 0) {
+              dispatch(changeHealth(0));
+              setTimeout(function () {
+                return dispatch(_setDungeonLvl('death'));
+              }, 250);
+              setTimeout(function () {
+                return dispatch(newMsg('Oh no! You\'re dead. Try again, if you dare.'));
+              }, 1000);
+              setTimeout(function () {
+                return dispatch(batchActions([restart(), _createLvl(1), _setDungeonLvl(1)]));
+              }, 6000);
+              return;
+            }
+          }
+          // If player wins the fight, respond accordingly
+          if (destination.health <= 0) {
+            // First, increase XP and move into the new position
+            actions.push(addXP(10), changeEntity({ type: 'floor' }, [x, y]), changeEntity(newPlayer, newPosition), changePlayerPosition(newPosition), newMsg('You dealt ' + enemyDamage + ' damage and won the battle! Way to go!'));
+            // If player defeats a boss, end and restart the game
+            if (destination.type === 'boss') {
+              setTimeout(function () {
+                return dispatch(_setDungeonLvl('victory'));
+              }, 250);
+              setTimeout(function () {
+                return dispatch(newMsg('Better yet, you beat the boss!'));
+              }, 1000);
+              setTimeout(function () {
+                return dispatch(newMsg('...In other words, you won the game!'));
+              }, 2000);
+              setTimeout(function () {
+                return dispatch(batchActions([restart(), _createLvl(1), _setDungeonLvl(1)]));
+              }, 7000);
+            } else {
+              // If player defeats a regular enemy, continue the game
+              setTimeout(function () {
+                return dispatch(newMsg('You are 10 XP stronger.'));
+              }, 2000);
+              if ((player.xp + 10) % 100 === 0) {
+                setTimeout(function () {
+                  return dispatch(newMsg('You leveled up!'));
+                }, 5000);
+              }
+            }
+          }
+          break;
+        }
+      // next cases
+      default:
+        break;
+    }
+    // Dispatch all of the actions in response to player input
+    dispatch(batchActions(actions));
+  };
+};
+
+// Opening messages at beginning of each game
+var openingMessages = function openingMessages() {
+  return function (dispatch) {
+    dispatch(newMsg('Enter the dungeon!'));
+    setTimeout(function () {
+      return dispatch(newMsg('Explore, battle, and survive!'));
+    }, 2000);
+  };
+};
+
+// Restart the game
+var _restartGame = function _restartGame() {
+  return function (dispatch) {
+    dispatch(newMsg('Restarting the game...'));
+    setTimeout(function () {
+      return dispatch(batchActions([restart(), _createLvl(1), _setDungeonLvl(1)]));
+    }, 1000);
+  };
+};
+
+// REACT COMPONENTS
+var Cell = function Cell(_ref10) {
+  var cell = _ref10.cell,
+      distance = _ref10.distance,
+      visible = _ref10.visible,
+      zone = _ref10.zone;
+
+  if (visible) {
+    // Make faraway cells less visible
+    cell.opacity = distance > 16 ? 0 : distance > 8 ? 250 / Math.pow(2, distance) : distance > 7 ? 0.7 : distance > 6 ? 0.9 : 1;
+  }
+  return React.createElement('div', {
+    className: cell.type ? 'cell ' + cell.type : 'cell back-' + zone,
+    style: { opacity: cell.opacity }
+  });
+};
+
+var Header = function Header(_ref11) {
+  var _ref11$lvl = _ref11.lvl,
+      lvl = _ref11$lvl === undefined ? 1 : _ref11$lvl;
+  return React.createElement(
+    'div',
+    { className: 'header-bg' },
+    React.createElement(
+      'h1',
+      { className: 'header-' + lvl },
+      'DC'
+    )
+  );
+};
+
+var Score = function Score(_ref12) {
+  var iconClass = _ref12.iconClass,
+      title = _ref12.title,
+      value = _ref12.value;
+  return React.createElement(
+    'div',
+    { className: 'score-item' },
+    React.createElement('div', { className: 'icon cell ' + iconClass }),
+    React.createElement(
+      'span',
+      { className: 'score-label' },
+      title + ': ' + value
+    )
+  );
+};
+
+// COMPONENT: DUNGEON
+
+var Dungeon = function (_React$Component) {
+  _inherits(Dungeon, _React$Component);
+
+  function Dungeon() {
+    _classCallCheck(this, Dungeon);
+
+    var _this = _possibleConstructorReturn(this, (Dungeon.__proto__ || Object.getPrototypeOf(Dungeon)).call(this));
+
+    _this.handleKeyPress = function (e) {
+      // Only respond during active game
+      if (typeof _this.props.grid.dungeonLvl === 'number') {
+        switch (e.keyCode) {
+          // Up or W
+          case 38:
+          case 87:
+            _this.props.playerInput([0, -1]);
+            break;
+          // Down or S
+          case 40:
+          case 83:
+            _this.props.playerInput([0, 1]);
+            break;
+          // Left or A
+          case 37:
+          case 65:
+            _this.props.playerInput([-1, 0]);
+            break;
+          // Right or D
+          case 39:
+          case 68:
+            _this.props.playerInput([1, 0]);
+            break;
+          default:
+        }
+      }
+    };
+
+    _this.handleResize = function (e) {
+      // Set initial viewport size
+      _this.setState({
+        vpWidth: e.target.innerWidth / _this.vpWidthRatio,
+        vpHeight: Math.max(_this.vpHeightMin, e.target.innerHeight / _this.vpHeightRadio - _this.vpHeightOffset)
+      });
+    };
+
+    _this.state = {
+      vpWidth: 0,
+      vpHeight: 0
+    };
+
+    _this.vpHeightOffset = 5;
+    _this.vpHeightMin = 22;
+    _this.vpHeightRatio = 21;
+    _this.vpWidthRatio = 30;
+    return _this;
+  }
+
+  _createClass(Dungeon, [{
+    key: 'componentWillMount',
+    value: function componentWillMount() {
+      // Set initial viewport size
+      this.setState({
+        vpWidth: window.innerWidth / this.vpWidthRatio,
+        vpHeight: Math.max(this.vpHeightMin, window.innerHeight / this.vpHeightRadio - this.vpHeightOffset)
+      });
+      // Set initial level
+      this.props.createLvl();
+      this.props.setDungeonLvl(1);
+    }
+  }, {
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      window.addEventListener('keydown', this.handleKeyPress);
+      window.addEventListener('resize', this.handleResize);
+      this.props.triggerOpeningMessages();
+    }
+  }, {
+    key: 'componentWillUnmount',
+    value: function componentWillUnmount() {
+      window.removeEventListener('keydown', this.handleKeyPress);
+      window.removeEventListener('resize', this.handleResize);
+    }
+
+    // Handle user input
+
+
+    // Handle window resizing
+
+  }, {
+    key: 'render',
+    value: function render() {
+      var _this2 = this;
+
+      // Maintain even viewport width and height
+      var vpWidth = this.state.vpWidth - this.state.vpWidth % 2;
+      var vpHeight = this.state.vpHeight - this.state.vpHeight % 2;
+      // Store props
+      var entities = this.props.grid.entities;
+
+      var _props$grid$playerPos = _slicedToArray(this.props.grid.playerPosition, 2),
+          playerX = _props$grid$playerPos[0],
+          playerY = _props$grid$playerPos[1];
+
+      // Store viewport limits (to only display cells within viewport)
+
+
+      var vpLimits = {
+        top: clamp(playerY - vpHeight / 2, [0, entities.length - vpHeight]),
+        right: Math.max(playerX + vpWidth / 2, vpWidth),
+        bottom: Math.max(playerY + vpHeight / 2, vpHeight),
+        left: clamp(playerX - vpWidth / 2, [0, entities[0].length - vpWidth])
+      };
+
+      // Create new array of entities with distance property (for fog mode)
+      var newEntities = entities.map(function (row, i) {
+        return row.map(function (cell, j) {
+          // Calculate distance of cell from player
+          cell.distance = Math.abs(playerY - i) + Math.abs(playerX - j);
+          return cell;
+        });
+      });
+
+      // Create all cells within viewport
+      var cells = newEntities.filter(function (row, i) {
+        return i >= vpLimits.top && i < vpLimits.bottom;
+      }).map(function (row, i) {
+        return React.createElement(
+          'div',
+          { key: 'row-' + i, className: 'row' },
+          row.filter(function (r, j) {
+            return i >= vpLimits.left && i < vpLimits.right;
+          }).map(function (cell, k) {
+            return React.createElement(Cell, {
+              key: 'cell-' + k,
+              cell: cell,
+              distance: cell.distance,
+              zone: _this2.props.grid.dungeonLvl,
+              visible: _this2.props.fogMode
+            });
+          })
+        );
+      });
+      return React.createElement(
+        'div',
+        { className: 'dungeon' },
+        cells
+      );
+    }
+  }]);
+
+  return Dungeon;
+}(React.Component);
+
+var mapStateToDungeonProps = function mapStateToDungeonProps(_ref13) {
+  var ui = _ref13.ui,
+      grid = _ref13.grid,
+      player = _ref13.player;
+  return {
+    fogMode: ui.fogMode,
+    grid: grid,
+    player: player
+  };
+};
+
+var mapDispatchToDungeonProps = function mapDispatchToDungeonProps(dispatch) {
+  return {
+    playerInput: function playerInput(vector) {
+      return dispatch(_playerInput(vector));
+    },
+    createLvl: function createLvl() {
+      return dispatch(_createLvl());
+    },
+    setDungeonLvl: function setDungeonLvl(lvl) {
+      return dispatch(_setDungeonLvl(lvl));
+    },
+    triggerOpeningMessages: function triggerOpeningMessages() {
+      return dispatch(openingMessages());
+    }
+  };
+};
+
+var cDungeon = ReactRedux.connect(mapStateToDungeonProps, mapDispatchToDungeonProps)(Dungeon);
+
+// TO-DO: Implement Tips
+
+// COMPONENT: MESSAGE CENTER
+var MessageCenter = function MessageCenter(_ref14) {
+  var messages = _ref14.messages;
+  return React.createElement(
+    'div',
+    { className: 'panel messages' },
+    React.createElement(
+      'ul',
+      null,
+      messages.slice(-3).map(function (msg, i) {
+        return React.createElement(
+          'li',
+          { key: 'msg-' + i + '-' + msg },
+          msg
+        );
+      })
+    )
+  );
+};
+
+var mapStateToMessageCenterProps = function mapStateToMessageCenterProps(_ref15) {
+  var ui = _ref15.ui;
+  return {
+    messages: ui.messages
+  };
+};
+
+var cMessageCenter = ReactRedux.connect(mapStateToMessageCenterProps)(MessageCenter);
+
+// COMPONENT: SETTINGS
+
+var Settings = function (_React$Component2) {
+  _inherits(Settings, _React$Component2);
+
+  function Settings() {
+    var _ref16;
+
+    var _temp, _this3, _ret;
+
+    _classCallCheck(this, Settings);
+
+    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    return _ret = (_temp = (_this3 = _possibleConstructorReturn(this, (_ref16 = Settings.__proto__ || Object.getPrototypeOf(Settings)).call.apply(_ref16, [this].concat(args))), _this3), _this3.handleKeyPress = function (e) {
+      switch (e.keyCode) {
+        // F for Fog Mode
+        case 70:
+          _this3.props.toggleFogMode();
+          break;
+        // R for Restart
+        case 82:
+          _this3.props.restartGame();
+          break;
+        default:
+      }
+    }, _temp), _possibleConstructorReturn(_this3, _ret);
+  }
+
+  _createClass(Settings, [{
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      window.addEventListener('keydown', this.handleKeyPress);
+    }
+  }, {
+    key: 'componentWillUnmount',
+    value: function componentWillUnmount() {
+      window.removeEventListener('keydown', this.handleKeyPress);
+    }
+  }, {
+    key: 'render',
+    value: function render() {
+      var _props = this.props,
+          fogMode = _props.fogMode,
+          toggleFogMode = _props.toggleFogMode,
+          restartGame = _props.restartGame;
+
+      return React.createElement(
+        'div',
+        { className: 'panel' },
+        React.createElement(
+          'div',
+          { className: 'score-item' },
+          React.createElement('input', {
+            onChange: toggleFogMode,
+            id: 'toggleFogMode',
+            type: 'checkbox',
+            checked: fogMode
+          }),
+          React.createElement(
+            'label',
+            { htmlFor: 'toggle' },
+            'Fog Mode'
+          )
+        ),
+        React.createElement(
+          'div',
+          { className: 'score-item' },
+          React.createElement('div', { onClick: restartGame, className: 'restart-btn' }),
+          React.createElement(
+            'span',
+            { onClick: restartGame, className: 'setting-label' },
+            'Restart'
+          )
+        )
+      );
+    }
+  }]);
+
+  return Settings;
+}(React.Component);
+
+var mapStateToSettingsProps = function mapStateToSettingsProps(_ref17) {
+  var ui = _ref17.ui;
+  return {
+    fogMode: ui.fogMode
+  };
+};
+
+var mapDispatchToSettingsProps = function mapDispatchToSettingsProps(dispatch) {
+  return {
+    toggleFogMode: function toggleFogMode() {
+      return dispatch(_toggleFogMode());
+    },
+    restartGame: function restartGame() {
+      return dispatch(_restartGame());
+    }
+  };
+};
+
+var cSettings = ReactRedux.connect(mapStateToSettingsProps, mapDispatchToSettingsProps)(Settings);
+
+// TO-DO: Implement Scoreboard
+
+var App = function App(props) {
+  return React.createElement(
+    'div',
+    null,
+    React.createElement(Header, null),
+    React.createElement(
+      'div',
+      { id: 'app' },
+      React.createElement(Dungeon, null),
+      React.createElement(
+        'div',
+        { className: 'sidebar' },
+        React.createElement(Settings, null),
+        React.createElement(MessageCenter, null)
+      )
+    )
+  );
+};
+
+var mapStateToAppProps = function mapStateToAppProps(_ref18) {
+  var grid = _ref18.grid,
+      player = _ref18.player;
+  return { grid: grid, player: player };
+};
+var cApp = ReactRedux.connect(mapStateToAppProps)(App);
+
+var dungeonInitialState = {
   entities: [[]],
   dungeonLvl: 0,
   playerPosition: []
 };
 
-// Reducer
-function createBoard() {
-  var state = arguments.length <= 0 || arguments[0] === undefined ? initialState : arguments[0];
-  var _ref5 = arguments[1];
-  var type = _ref5.type;
-  var payload = _ref5.payload;
+var playerInitialState = {
+  health: 100,
+  xp: 100,
+  weapon: {
+    name: 'Pistol',
+    damage: 13
+  }
+};
+
+var messages = [];
+
+var uiInitialState = {
+  fogMode: true,
+  messages: messages
+};
+
+// REDUCERS
+
+var dungeonReducer = function dungeonReducer() {
+  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : dungeonInitialState;
+  var _ref19 = arguments[1];
+  var type = _ref19.type,
+      payload = _ref19.payload;
 
   switch (type) {
     case CHANGE_ENTITY:
       {
-        var _y, _React$addons$update;
+        var _payload$coords = _slicedToArray(payload.coords, 2),
+            x = _payload$coords[0],
+            y = _payload$coords[1];
 
-        // Create a new entity
-        var _payload$coords = payload.coords;
-        var x = _payload$coords[0];
-        var y = _payload$coords[1];
-
-        var entities = React.addons.update(state.entities, (_React$addons$update = {}, _React$addons$update[y] = (_y = {}, _y[x] = { $set: payload.entity }, _y), _React$addons$update));
+        var entities = React.addons.update(state.entities, _defineProperty({}, y, _defineProperty({}, x, { $set: payload.entity })));
         return _extends({}, state, { entities: entities });
       }
     case CHANGE_PLAYER_POSITION:
@@ -274,190 +913,54 @@ function createBoard() {
     default:
       return state;
   }
-}
-
-// Actions
-var changeEntity = function changeEntity(entity, coords) {
-  return {
-    type: CHANGE_ENTITY,
-    payload: { entity: entity, coords: coords }
-  };
 };
 
-var changePlayerPosition = function changePlayerPosition(payload) {
-  return {
-    type: CHANGE_PLAYER_POSITION,
-    payload: payload
-  };
-};
+var playerReducer = function playerReducer() {
+  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : playerInitialState;
+  var _ref20 = arguments[1];
+  var type = _ref20.type,
+      payload = _ref20.payload;
 
-var createLvl = function createLvl(lvl) {
-  return {
-    type: CREATE_LVL,
-    payload: createEntities(createDungeon(), lvl)
-  };
-};
-
-var setDungeonLvl = function setDungeonLvl(payload) {
-  return {
-    type: SET_DUNGEON_LVL,
-    payload: payload
-  };
-};
-
-var batchActions = function batchActions(actions) {
-  return {
-    type: BATCH_ACTIONS,
-    payload: actions
-  };
-};
-
-// Function dispatch multiple actions efficiently
-function enableBatching(reducer) {
-  return function batchingReducer(state, action) {
-    switch (action.type) {
-      case BATCH_ACTIONS:
-        return action.payload.reduce(reducer, state);
-      default:
-        return reducer(state, action);
-    }
-  };
-}
-// Create initial store and set game to Level 1
-var store = Redux.createStore(enableBatching(createBoard));
-store.dispatch(createLvl(1));
-store.dispatch(setDungeonLvl(1));
-
-var App = (_temp = _class = function (_React$Component) {
-  _inherits(App, _React$Component);
-
-  function App() {
-    _classCallCheck(this, App);
-
-    return _possibleConstructorReturn(this, _React$Component.apply(this, arguments));
-  }
-
-  // Respond to player input
-
-  App.prototype.componentDidMount = function componentDidMount() {
-    var _this2 = this;
-
-    // Listen for keypress
-    window.addEventListener('keydown', App.keydown);
-    // Re-render after each store update
-    this.unsubscribe = store.subscribe(function () {
-      return _this2.forceUpdate();
-    });
-  };
-
-  // Capture user input
-
-  App.prototype.componentWillUnmount = function componentWillUnmount() {
-    // Upon unmount, remove event listener and unsubscribe
-    window.removeEventListener('keydown', App.keydown);
-    this.unsubscribe();
-  };
-
-  App.prototype.render = function render() {
-    var _store$getState = store.getState();
-
-    var entities = _store$getState.entities;
-    var playerPosition = _store$getState.playerPosition;
-
-    return React.createElement(
-      'div',
-      { className: 'app' },
-      React.createElement(Dungeon, {
-        entities: entities,
-        playerPosition: playerPosition
-      })
-    );
-  };
-
-  return App;
-}(React.Component), _class.playerInput = function (vector) {
-  var state = store.getState();
-  var _state$playerPosition = state.playerPosition;
-  var x = _state$playerPosition[0];
-  var y = _state$playerPosition[1];
-  var vectorX = vector[0];
-  var vectorY = vector[1];
-
-  var newPosition = [x + vectorX, y + vectorY];
-  var newPlayer = state.entities[y][x];
-  var destination = state.entities[y + vectorY][x + vectorX];
-  // Allow player to move onto floor, potion, weapon, and exit spaces
-  if (destination.type && destination.type !== 'enemy' && destination.type !== 'boss') {
-    // Perform entity and player-position changes via batchActions
-    store.dispatch(batchActions([changeEntity({ type: 'floor' }, [x, y]), changeEntity(newPlayer, newPosition), changePlayerPosition(newPosition)]));
-  }
-}, _class.keydown = function (e) {
-  switch (e.keyCode) {
-    // Up or W
-    case 38:
-    case 87:
-      App.playerInput([0, -1]);
-      break;
-    // Down or S
-    case 40:
-    case 83:
-      App.playerInput([0, 1]);
-      break;
-    // Left or A
-    case 37:
-    case 65:
-      App.playerInput([-1, 0]);
-      break;
-    // Right or D
-    case 39:
-    case 68:
-      App.playerInput([1, 0]);
-      break;
+  switch (type) {
+    case ADD_WEAPON:
+      return _extends({}, state, { weapon: payload });
+    case ADD_XP:
+      return _extends({}, state, { xp: state.xp + payload });
+    case CHANGE_HEALTH:
+      return _extends({}, state, { health: payload });
+    case RESTART:
+      return playerInitialState;
     default:
+      return state;
   }
-}, _temp);
-
-// Dungeon
-
-var Dungeon = function Dungeon(props) {
-  var entities = props.entities;
-  var playerPosition = props.playerPosition;
-  var x = playerPosition[0];
-  var y = playerPosition[1];
-  // Fog mode
-
-  entities.map(function (row, i) {
-    return row.map(function (cell, j) {
-      // Calculate distance of cell from player
-      var dist = Math.abs(y - i) + Math.abs(x - j);
-      // Make faraway cells less visible
-      cell.opacity = dist > 16 ? 0 : dist > 8 ? 250 / Math.pow(2, dist) : dist > 7 ? 0.7 : dist > 6 ? 0.9 : 1;
-      return cell;
-    });
-  });
-
-  var cells = entities.map(function (entity, eIdx) {
-    return React.createElement(
-      'div',
-      { className: 'row', key: 'row-' + eIdx },
-      entity.map(function (cell, cIdx) {
-        return React.createElement(
-          'div',
-          {
-            className: cell.type ? 'cell ' + cell.type : 'cell',
-            style: { opacity: cell.opacity },
-            key: 'cell-' + cIdx
-          },
-          cell.id
-        );
-      })
-    );
-  });
-  return React.createElement(
-    'div',
-    { className: 'flex-container' },
-    cells
-  );
 };
 
-ReactDOM.render(React.createElement(App, null), document.getElementById('container'));
+var uiReducer = function uiReducer() {
+  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : uiInitialState;
+  var _ref21 = arguments[1];
+  var type = _ref21.type,
+      payload = _ref21.payload;
+
+  switch (type) {
+    case NEW_MSG:
+      return _extends({}, state, { messages: [].concat(_toConsumableArray(state.messages), [payload]) });
+    case TOGGLE_FOG_MODE:
+      return _extends({}, state, { fogMode: !state.fogMode });
+    case RESTART:
+      return uiInitialState;
+    default:
+      return state;
+  }
+};
+
+var reducers = Redux.combineReducers({ dungeonReducer: dungeonReducer, playerReducer: playerReducer, uiReducer: uiReducer });
+var createStoreWithMiddleware = Redux.applyMiddleware(ReduxThunk.default)(Redux.createStore);
+var _ReactRedux = ReactRedux,
+    Provider = _ReactRedux.Provider;
+
+
+ReactDOM.render(React.createElement(
+  Provider,
+  { store: createStoreWithMiddleware(enableBatching(reducers)) },
+  React.createElement(App, null)
+), document.getElementById('root'));
