@@ -1,9 +1,31 @@
-// INITIAL SETUP
-// Dungeon params
-const gridHeight = 40;
-const gridWidth = 60;
-const maxRooms = 15;
-const roomSizeRange = [5, 15];
+// REDUX SETUP
+// Action Types
+const BATCH_ACTIONS = 'BATCH_ACTIONS';
+const ADD_WEAPON = 'ADD_WEAPON';
+const ADD_XP = 'ADD_XP';
+const CHANGE_ENTITY = 'CHANGE_ENTITY';
+const CHANGE_HEALTH = 'CHANGE_HEALTH';
+const CHANGE_PLAYER_POSITION = 'CHANGE_PLAYER_POSITION';
+const CREATE_LVL = 'CREATE_LVL';
+const NEW_MSG = 'NEW_MSG';
+const RESTART = 'RESTART';
+const SET_DUNGEON_LVL = 'SET_DUNGEON_LVL';
+const TOGGLE_FOG_MODE = 'TOGGLE_FOG_MODE';
+
+function batchActions(actions) {
+  return { type: BATCH_ACTIONS, payload: actions };
+}
+
+function enableBatching(reduce) {
+  return function batchingReducer(state, action) {
+    switch (action.type) {
+      case BATCH_ACTIONS:
+        return action.payload.reduce(batchingReducer, state);
+      default:
+        return reduce(state, action);
+    }
+  };
+}
 
 // HELPER FUNCTIONS
 // Generate random integer within range
@@ -21,7 +43,12 @@ function clamp(num, [min, max]) {
   return Math.min(Math.max(min, num), max);
 }
 
-// DUNGEON CREATION
+// Dungeon Params
+const gridWidth = 60;
+const gridHeight = 40;
+const maxRooms = 15;
+const roomSizeRange = [5, 15];
+
 // Generate the entire dungeon
 const createDungeon = () => {
   // Ensure room is within free space in grid
@@ -137,9 +164,7 @@ const createDungeon = () => {
 
 // Create all entities (characters, items, etc.)
 const createEntities = (gameMap, lvl = 1) => {
-  // Prepare to store player's initial position
-  let playerPosition = [];
-  // Bosses appear after Level 4
+  // Bosses appear at Level 4
   const bosses = [];
   if (lvl === 4) bosses.push({ health: 400, lvl: 5, type: 'boss' });
   // Enemies attributes are based on level
@@ -169,7 +194,10 @@ const createEntities = (gameMap, lvl = 1) => {
     { name: 'Monster Blaster', damage: 50 }
   ];
   // Limit list of available weapons to current level
-  const availableWeapons = weaponTypes.filter(weapon => ((weapon.damage < ((lvl * 10) + 10)) && (weapon.damage > ((lvl * 10) - 10))));
+  const availableWeapons =
+        weaponTypes.filter(weapon => (
+          (weapon.damage < ((lvl * 10) + 10))
+          && (weapon.damage > ((lvl * 10) - 10))));
   const weapons = [];
   // Randomly generate 3 available weapons
   for (let i = 0; i < 3; i++) {
@@ -179,6 +207,9 @@ const createEntities = (gameMap, lvl = 1) => {
   }
 
   // Place entities on open floor cells
+  // First, prepare to store player's initial position
+  let playerPosition = [];
+  // Then, iterate over all entities
   [bosses, enemies, exits, players, potions, weapons].forEach((entities) => {
     // Iterate over each entity
     while (entities.length) {
@@ -195,7 +226,7 @@ const createEntities = (gameMap, lvl = 1) => {
     }
   });
 
-  // Update floors and doors
+  // Replace doors (cells that connect rooms) with floors
   for (let i = 0; i < gameMap.length; i++) {
     for (let j = 0; j < gameMap[0].length; j++) {
       // Choose random floor opacity
@@ -204,30 +235,13 @@ const createEntities = (gameMap, lvl = 1) => {
       if (gameMap[i][j].type === 'door') gameMap[i][j].type = 'floor';
     }
   }
-
   // Return newly created map, along with position of player
   return { entities: gameMap, playerPosition };
 };
 
-// REDUX
-const BATCH_ACTIONS = 'BATCH_ACTIONS';
-const ADD_WEAPON = 'ADD_WEAPON';
-const ADD_XP = 'ADD_XP';
-const CHANGE_ENTITY = 'CHANGE_ENTITY';
-const CHANGE_HEALTH = 'CHANGE_HEALTH';
-const CHANGE_PLAYER_POSITION = 'CHANGE_PLAYER_POSITION';
-const CREATE_LVL = 'CREATE_LVL';
-const NEW_MSG = 'NEW_MSG';
-const RESTART = 'RESTART';
-const SET_DUNGEON_LVL = 'SET_DUNGEON_LVL';
-const TOGGLE_FOG_MODE = 'TOGGLE_FOG_MODE';
 
+// ADDITIONAL REDUX SETUP
 // Action Creators
-const batchActions = actions => ({
-  type: BATCH_ACTIONS,
-  payload: actions
-});
-
 const addWeapon = payload => ({
   type: ADD_WEAPON,
   payload
@@ -276,22 +290,11 @@ const toggleFogMode = () => ({
   type: TOGGLE_FOG_MODE
 });
 
-// Function to dispatch multiple actions efficiently
-function enableBatching(reducer) {
-  return function batchingReducer(state, action) {
-    switch (action.type) {
-      case BATCH_ACTIONS:
-        return action.payload.reduce(reducer, state);
-      default:
-        return reducer(state, action);
-    }
-  };
-}
-
 // Respond to player input
-const playerInput = ([vectorX, vectorY]) => (dispatch, getState) => {
+const playerInput = vector => (dispatch, getState) => {
   const { grid, player } = getState();
-  const [x, y] = grid.playerPosition.slice(0); // .slice(0)? Current position
+  const [vectorX, vectorY] = vector; // Direction modifier
+  const [x, y] = grid.playerPosition.slice(0); // Current position
   const newPosition = [x + vectorX, y + vectorY]; // Next position
   const newPlayer = grid.entities[y][x]; // Player on map
   const destination = grid.entities[y + vectorY][x + vectorX]; // What's in next position
@@ -323,9 +326,12 @@ const playerInput = ([vectorX, vectorY]) => (dispatch, getState) => {
         // If player is dead, end and restart the game
         if (player.health - playerDamage <= 0) {
           dispatch(changeHealth(0));
-          setTimeout(() => dispatch(setDungeonLvl('death')), 250);
-          setTimeout(() => dispatch(newMsg('Oh no! You\'re dead. Try again, if you dare.')), 1000);
-          setTimeout(() => dispatch(batchActions([restart(), createLvl(1), setDungeonLvl(1)])), 6000);
+          setTimeout(() => dispatch(setDungeonLvl('death')),
+            250);
+          setTimeout(() => dispatch(newMsg('Oh no! You\'re dead. Try again, if you dare.')),
+            1000);
+          setTimeout(() => dispatch(batchActions([restart(), createLvl(1), setDungeonLvl(1)])),
+            6000);
           return;
         }
       }
@@ -340,14 +346,22 @@ const playerInput = ([vectorX, vectorY]) => (dispatch, getState) => {
           newMsg(`You dealt ${enemyDamage} damage and won the battle! Way to go!`));
         // If player defeats a boss, end and restart the game
         if (destination.type === 'boss') {
-          setTimeout(() => dispatch(setDungeonLvl('victory')), 250);
-          setTimeout(() => dispatch(newMsg('Better yet, you beat the boss!')), 1000);
-          setTimeout(() => dispatch(newMsg('...In other words, you won the game!')), 2000);
-          setTimeout(() => dispatch(batchActions([restart(), createLvl(1), setDungeonLvl(1)])), 7000);
+          setTimeout(() => dispatch(setDungeonLvl('victory')),
+            250);
+          setTimeout(() => dispatch(newMsg('Better yet, you beat the boss!')),
+            1000);
+          setTimeout(() => dispatch(newMsg('...In other words, you won the game!')),
+            2000);
+          setTimeout(() => dispatch(batchActions([restart(), createLvl(1), setDungeonLvl(1)])),
+            7000);
         } else {
           // If player defeats a regular enemy, continue the game
-          setTimeout(() => dispatch(newMsg('You are 10 XP stronger.')), 2000);
-          if ((player.xp + 10) % 100 === 0) { setTimeout(() => dispatch(newMsg('You leveled up!')), 5000); }
+          setTimeout(() => dispatch(newMsg('You are 10 XP stronger.')),
+            2000);
+          if ((player.xp + 10) % 100 === 0) {
+            setTimeout(() => dispatch(newMsg('You leveled up!')),
+              5000);
+          }
         }
       }
       break;
@@ -360,37 +374,40 @@ const playerInput = ([vectorX, vectorY]) => (dispatch, getState) => {
   dispatch(batchActions(actions));
 };
 
+
 // Opening messages at beginning of each game
-const openingMessages = () => ((dispatch) => {
+const openingMessages = () => (dispatch) => {
   dispatch(newMsg('Enter the dungeon!'));
   setTimeout(() => dispatch(newMsg('Explore, battle, and survive!')), 2000);
-});
-
-// Restart the game
-const restartGame = () => ((dispatch) => {
-  dispatch(newMsg('Restarting the game...'));
-  setTimeout(() => dispatch(batchActions([restart(), createLvl(1), setDungeonLvl(1)])), 1000);
-});
-
-// REACT COMPONENTS
-const Cell = ({ cell, distance, visible, zone }) => {
-  if (visible) {
-    // Make faraway cells less visible
-    cell.opacity =
-            (distance > 16) ? 0
-              : (distance > 8) ? (250 / Math.pow(2, distance))
-                : (distance > 7) ? 0.7
-                  : (distance > 6) ? 0.9
-                    : 1;
-  }
-  return (
-    <div
-      className={cell.type ? `cell ${cell.type}` : `cell back-${zone}`}
-      style={{ opacity: cell.opacity }}
-    />);
 };
 
-const Header = ({ lvl = 1 }) => (
+// Restart the game
+const restartGame = () => (dispatch) => {
+  dispatch(newMsg('Restarting the game...'));
+  setTimeout(() => dispatch(batchActions([restart(), createLvl(1), setDungeonLvl(1)])), 1000);
+};
+
+// REACT COMPONENTS
+const Cell = ({ cell, distance, foggy, zone }) => {
+  let opacityVal = cell.opacity;
+  if (foggy) {
+    if (distance > 16) opacityVal = 0;
+    // Fade increasingly distant cells
+    else if (distance > 8) opacityVal = (250 / (2 ** distance));
+    else if (distance > 7) opacityVal = 0.7;
+    else if (distance > 6) opacityVal = 0.9;
+    else opacityVal = 1;
+  }
+
+  return (
+    <div
+      className={cell.type ? `${cell.type} cell` : `back-${zone} cell`}
+      style={{ opacity: opacityVal }}
+    />
+  );
+};
+
+const Header = ({ lvl }) => (
   <div className="header-bg">
     <h1 className={`header-${lvl}`}>DC</h1>
   </div>
@@ -403,15 +420,16 @@ const Score = ({ iconClass, title, value }) => (
   </div>
 );
 
+
 // COMPONENT: DUNGEON
-class Dungeon extends React.Component {
+class cDungeon extends React.Component {
   constructor() {
     super();
     this.state = {
       vpWidth: 0,
       vpHeight: 0
     };
-
+    // Viewport params
     this.vpHeightOffset = 5;
     this.vpHeightMin = 22;
     this.vpHeightRatio = 21;
@@ -420,11 +438,12 @@ class Dungeon extends React.Component {
 
   componentWillMount() {
     // Set initial viewport size
-    this.setState({
-      vpWidth: window.innerWidth / this.vpWidthRatio,
-      vpHeight: Math.max(this.vpHeightMin,
-        (window.innerHeight / this.vpHeightRadio) - this.vpHeightOffset)
-    });
+    const vpWidth = window.innerWidth / this.vpWidthRatio;
+    const vpHeight = Math.max(
+      this.vpHeightMin,
+      (window.innerHeight / this.vpHeightRatio) - this.vpHeightOffset
+    );
+    this.setState({ vpWidth, vpHeight });
     // Set initial level
     this.props.createLvl();
     this.props.setDungeonLvl(1);
@@ -437,8 +456,8 @@ class Dungeon extends React.Component {
   }
 
   componentWillUnmount() {
-    window.removeEventListener('keydown', this.handleKeyPress);
-    window.removeEventListener('resize', this.handleResize);
+    window.removeEventListener('keydown', this.handleKeyPress, 100);
+    window.removeEventListener('resize', this.handleResize, 500);
   }
 
   // Handle user input
@@ -473,31 +492,26 @@ class Dungeon extends React.Component {
 
   // Handle window resizing
   handleResize = (e) => {
+    const vpWidth = e.target.innerWidth / this.vpWidthRatio;
+    const vpHeight = Math.max(this.vpHeightMin,
+      (e.target.innerHeight / this.vpHeightRatio) - this.vpHeightOffset);
     // Set initial viewport size
-    this.setState({
-      vpWidth: e.target.innerWidth / this.vpWidthRatio,
-      vpHeight: Math.max(this.vpHeightMin,
-        (e.target.innerHeight / this.vpHeightRadio) - this.vpHeightOffset)
-    });
+    this.setState({ vpWidth, vpHeight });
   };
 
   render() {
-    // Maintain even viewport width and height
+    // Maintain even numbers for viewport width and height
     const vpWidth = this.state.vpWidth - (this.state.vpWidth % 2);
     const vpHeight = this.state.vpHeight - (this.state.vpHeight % 2);
     // Store props
     const { entities } = this.props.grid;
     const [playerX, playerY] = this.props.grid.playerPosition;
-
-    // Store viewport limits (to only display cells within viewport)
-    const vpLimits = {
-      top: clamp(playerY - (vpHeight / 2), [0, entities.length - vpHeight]),
-      right: Math.max(playerX + (vpWidth / 2), vpWidth),
-      bottom: Math.max(playerY + (vpHeight / 2), vpHeight),
-      left: clamp(playerX - (vpWidth / 2), [0, entities[0].length - vpWidth])
-    };
-
-    // Create new array of entities with distance property (for fog mode)
+    // Set viewport limits (to only display cells within viewport)
+    const top = clamp(playerY - (vpHeight / 2), [0, entities.length - vpHeight]);
+    const right = Math.max(playerX + (vpWidth / 2), vpWidth);
+    const bottom = Math.max(playerY + (vpHeight / 2), vpHeight);
+    const left = clamp(playerX - (vpWidth / 2), [0, entities[0].length - vpWidth]);
+    // Create new array of entities with distance property (for Fog mode)
     const newEntities = entities.map((row, i) => row.map((cell, j) => {
       // Calculate distance of cell from player
       cell.distance = Math.abs(playerY - i) + Math.abs(playerX - j);
@@ -506,25 +520,25 @@ class Dungeon extends React.Component {
 
     // Create all cells within viewport
     const cells = newEntities
-      .filter((row, i) => i >= vpLimits.top && i < vpLimits.bottom)
+      .filter((row, i) => i >= top && i < bottom)
       .map((row, i) => (
         <div key={`row-${i}`} className="row">
           {
             row
-              .filter((r, j) => i >= vpLimits.left && i < vpLimits.right)
+              .filter((r, j) => j >= left && j < right)
               .map((cell, k) => (
                 <Cell
                   key={`cell-${k}`}
                   cell={cell}
                   distance={cell.distance}
                   zone={this.props.grid.dungeonLvl}
-                  visible={this.props.fogMode}
+                  foggy={this.props.fogMode}
                 />
               ))
           }
         </div>
       ));
-    return <div className="dungeon">{cells}</div>;
+    return (<div className="dungeon">{cells}</div>);
   }
 }
 
@@ -541,31 +555,27 @@ const mapDispatchToDungeonProps = dispatch => ({
   triggerOpeningMessages: () => dispatch(openingMessages())
 });
 
-const cDungeon = ReactRedux.connect(mapStateToDungeonProps, mapDispatchToDungeonProps)(Dungeon);
+const Dungeon = ReactRedux.connect(mapStateToDungeonProps, mapDispatchToDungeonProps)(cDungeon);
 
 // TO-DO: Implement Tips
 
 // COMPONENT: MESSAGE CENTER
-const MessageCenter = ({ messages }) => (
+const cMessageCenter = ({ messages }) => (
   <div className="panel messages">
     <ul>
       {
-        messages.slice(-3).map((msg, i) => (
-          <li key={`msg-${i}-${msg}`}>{msg}</li>
-        ))
+        messages.slice(-3).map((msg, i) => <li key={`msg-${i}-${msg}`}>{msg}</li>)
       }
     </ul>
   </div>
 );
 
-const mapStateToMessageCenterProps = ({ ui }) => ({
-  messages: ui.messages
-});
+const mapStateToMessageCenterProps = ({ ui }) => ({ messages: ui.messages });
 
-const cMessageCenter = ReactRedux.connect(mapStateToMessageCenterProps)(MessageCenter);
+const MessageCenter = ReactRedux.connect(mapStateToMessageCenterProps)(cMessageCenter);
 
 // COMPONENT: SETTINGS
-class Settings extends React.Component {
+class cSettings extends React.Component {
   componentDidMount() {
     window.addEventListener('keydown', this.handleKeyPress);
   }
@@ -586,7 +596,7 @@ class Settings extends React.Component {
         break;
       default:
     }
-  }
+  };
 
   render() {
     const { fogMode, toggleFogMode, restartGame } = this.props;
@@ -619,13 +629,12 @@ const mapDispatchToSettingsProps = dispatch => ({
   restartGame: () => dispatch(restartGame())
 });
 
-const cSettings = ReactRedux.connect(mapStateToSettingsProps, mapDispatchToSettingsProps)(Settings);
+const Settings = ReactRedux.connect(mapStateToSettingsProps, mapDispatchToSettingsProps)(cSettings);
 
 // TO-DO: Implement Scoreboard
-
-const App = props => (
+const cApp = props => (
   <div>
-    <Header />
+    <Header lvl={props.grid.dungeonLvl} />
     <div id="app">
       <Dungeon />
       <div className="sidebar">
@@ -637,14 +646,16 @@ const App = props => (
 );
 
 const mapStateToAppProps = ({ grid, player }) => ({ grid, player });
-const cApp = ReactRedux.connect(mapStateToAppProps)(App);
+const App = ReactRedux.connect(mapStateToAppProps)(cApp);
 
-const dungeonInitialState = {
+// REDUCERS
+
+// First, set initial states
+const gridInitialState = {
   entities: [[]],
   dungeonLvl: 0,
   playerPosition: []
 };
-
 const playerInitialState = {
   health: 100,
   xp: 100,
@@ -653,17 +664,14 @@ const playerInitialState = {
     damage: 13
   }
 };
-
 const messages = [];
-
 const uiInitialState = {
   fogMode: true,
   messages
 };
 
-// REDUCERS
-
-const dungeonReducer = (state = dungeonInitialState, { type, payload }) => {
+// Then, define reducers
+const grid = (state = gridInitialState, { type, payload }) => {
   switch (type) {
     case CHANGE_ENTITY: {
       const [x, y] = payload.coords;
@@ -672,25 +680,21 @@ const dungeonReducer = (state = dungeonInitialState, { type, payload }) => {
       });
       return { ...state, entities };
     }
-    case CHANGE_PLAYER_POSITION: {
+    case CHANGE_PLAYER_POSITION:
       return { ...state, playerPosition: payload };
-    }
-    case CREATE_LVL: {
+    case CREATE_LVL:
       return {
         ...state,
         playerPosition: payload.playerPosition,
         entities: payload.entities
       };
-    }
-    case SET_DUNGEON_LVL: {
+    case SET_DUNGEON_LVL:
       return { ...state, dungeonLvl: payload };
-    }
     default:
       return state;
   }
 };
-
-const playerReducer = (state = playerInitialState, { type, payload }) => {
+const player = (state = playerInitialState, { type, payload }) => {
   switch (type) {
     case ADD_WEAPON:
       return { ...state, weapon: payload };
@@ -704,8 +708,7 @@ const playerReducer = (state = playerInitialState, { type, payload }) => {
       return state;
   }
 };
-
-const uiReducer = (state = uiInitialState, { type, payload }) => {
+const ui = (state = uiInitialState, { type, payload }) => {
   switch (type) {
     case NEW_MSG:
       return { ...state, messages: [...state.messages, payload] };
@@ -718,13 +721,14 @@ const uiReducer = (state = uiInitialState, { type, payload }) => {
   }
 };
 
-const reducers = Redux.combineReducers({ dungeonReducer, playerReducer, uiReducer });
+// Combine the reducers
+const reducers = Redux.combineReducers({ grid, player, ui });
+// Utilize thunk to create store
 const createStoreWithMiddleware = Redux.applyMiddleware(ReduxThunk.default)(Redux.createStore);
-const { Provider } = ReactRedux;
 
+// Render entire app to the DOM
 ReactDOM.render(
-  <Provider store={createStoreWithMiddleware(enableBatching(reducers))}>
+  <ReactRedux.Provider store={createStoreWithMiddleware(enableBatching(reducers))}>
     <App />
-  </Provider>
-  , document.getElementById('root')
-);
+  </ReactRedux.Provider>
+  , document.getElementById('root'));
