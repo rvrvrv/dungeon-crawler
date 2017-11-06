@@ -1,13 +1,24 @@
 body, .flex-container {
   background: #000;
+  color: #ccc;
+  font-family: "Kelly Slab", sans-serif;
 }
 
-.app, .row {
+.header-bg {
+  width: 100%;
+  background: #0d0d0d;
+}
+
+h1 {
+  text-align: center;
+}
+
+.row {
   display: flex;
   justify-content: center;
 }
 
-.flex-container {
+.dungeon {
   border: 5px solid rgba(0, 0, 0, 0.2);
 }
 

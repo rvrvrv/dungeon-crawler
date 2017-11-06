@@ -10,12 +10,22 @@ $boss: #f00
 
 body, .flex-container
   background: $bg-color
+  color: $floor
+  font-family: 'Kelly Slab', sans-serif
 
-.app, .row
+.header-bg
+  width: 100%
+  background: lighten($bg-color, 5%)
+
+h1
+  text-align: center
+
+
+.row
   display: flex
   justify-content: center
 
-.flex-container
+.dungeon
   border: 5px solid rgba(0,0,0,0.2)
 
 .cell
