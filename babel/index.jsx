@@ -12,6 +12,7 @@ const RESTART = 'RESTART';
 const SET_DUNGEON_LVL = 'SET_DUNGEON_LVL';
 const TOGGLE_FOG_MODE = 'TOGGLE_FOG_MODE';
 
+// Redux Batching
 function batchActions(actions) {
   return { type: BATCH_ACTIONS, payload: actions };
 }
@@ -41,6 +42,28 @@ function randomRoom(range) {
 // Clamp number within range
 function clamp(num, [min, max]) {
   return Math.min(Math.max(min, num), max);
+}
+
+// Throttle (Source: https://gist.github.com/beaucharman/e46b8e4d03ef30480d7f4db5a78498ca)
+function throttle(callback, delay) {
+  let isThrottled = false, args, context;
+  function wrapper() {
+    if (isThrottled) {
+      args = arguments;
+      context = this;
+      return;
+    }
+    isThrottled = true;
+    callback.apply(this, arguments);
+    setTimeout(() => {
+      isThrottled = false;
+      if (args) {
+        wrapper.apply(context, args);
+        args = context = null;
+      }
+    }, delay);
+  }
+  return wrapper;
 }
 
 // Dungeon Params
@@ -229,10 +252,10 @@ const createEntities = (gameMap, lvl = 1) => {
   // Replace doors (cells that connect rooms) with floors
   for (let i = 0; i < gameMap.length; i++) {
     for (let j = 0; j < gameMap[0].length; j++) {
-      // Choose random floor opacity
-      if (gameMap[i][j].type === 'floor') gameMap[i][j].opacity = randomInt([86, 90]) / 100;
       // Change door cell to floor cell
       if (gameMap[i][j].type === 'door') gameMap[i][j].type = 'floor';
+      // Set random floor opacity
+      if (gameMap[i][j].type === 'floor') gameMap[i][j].opacity = randomInt([86, 90]) / 100;
     }
   }
   // Return newly created map, along with position of player
@@ -303,7 +326,7 @@ const playerInput = vector => (dispatch, getState) => {
   if (destination.type && destination.type !== 'enemy' && destination.type !== 'boss') {
     // Store entity and player-position changes
     actions.push(
-      changeEntity({ type: 'floor' }, [x, y]),
+      changeEntity({ type: 'floor', opacity: randomInt([86, 90]) / 100 }, [x, y]),
       changeEntity(newPlayer, newPosition),
       changePlayerPosition(newPosition));
   }
@@ -340,7 +363,7 @@ const playerInput = vector => (dispatch, getState) => {
         // First, increase XP and move into the new position
         actions.push(
           addXP(10),
-          changeEntity({ type: 'floor' }, [x, y]),
+          changeEntity({ type: 'floor', opacity: randomInt([86, 90]) / 100 }, [x, y]),
           changeEntity(newPlayer, newPosition),
           changePlayerPosition(newPosition),
           newMsg(`You dealt ${enemyDamage} damage and won the battle! Way to go!`));
@@ -393,10 +416,10 @@ const Cell = ({ cell, distance, foggy, zone }) => {
   if (foggy) {
     if (distance > 16) opacityVal = 0;
     // Fade increasingly distant cells
-    else if (distance > 8) opacityVal = (250 / (2 ** distance));
-    else if (distance > 7) opacityVal = 0.7;
-    else if (distance > 6) opacityVal = 0.9;
-    else opacityVal = 1;
+    else if (distance > 8) opacityVal = Math.min(opacityVal, (250 / (2 ** distance)));
+    else if (distance > 7) opacityVal = Math.min(opacityVal, 0.7);
+    else if (distance > 6) opacityVal = Math.min(opacityVal, 0.9);
+    else opacityVal = Math.min(opacityVal, 1);
   }
 
   return (
@@ -409,7 +432,7 @@ const Cell = ({ cell, distance, foggy, zone }) => {
 
 const Header = ({ lvl }) => (
   <div className="header-bg">
-    <h1 className={`header-${lvl}`}>DC</h1>
+    <h1 className={`header-${lvl}`}>Dungeon Crawler</h1>
   </div>
 );
 
@@ -430,10 +453,9 @@ class cDungeon extends React.Component {
       vpHeight: 0
     };
     // Viewport params
-    this.vpHeightOffset = 5;
     this.vpHeightMin = 22;
-    this.vpHeightRatio = 21;
-    this.vpWidthRatio = 30;
+    this.vpHeightRatio = 30;
+    this.vpWidthRatio = 25;
   }
 
   componentWillMount() {
@@ -441,7 +463,7 @@ class cDungeon extends React.Component {
     const vpWidth = window.innerWidth / this.vpWidthRatio;
     const vpHeight = Math.max(
       this.vpHeightMin,
-      (window.innerHeight / this.vpHeightRatio) - this.vpHeightOffset
+      (window.innerHeight / this.vpHeightRatio)
     );
     this.setState({ vpWidth, vpHeight });
     // Set initial level
@@ -450,13 +472,13 @@ class cDungeon extends React.Component {
   }
 
   componentDidMount() {
-    window.addEventListener('keydown', this.handleKeyPress);
+    window.addEventListener('keydown', throttle(this.handleKeyPress, 80));
     window.addEventListener('resize', this.handleResize);
     this.props.triggerOpeningMessages();
   }
 
   componentWillUnmount() {
-    window.removeEventListener('keydown', this.handleKeyPress, 100);
+    window.removeEventListener('keydown', throttle(this.handleKeyPress, 80));
     window.removeEventListener('resize', this.handleResize, 500);
   }
 
@@ -493,8 +515,7 @@ class cDungeon extends React.Component {
   // Handle window resizing
   handleResize = (e) => {
     const vpWidth = e.target.innerWidth / this.vpWidthRatio;
-    const vpHeight = Math.max(this.vpHeightMin,
-      (e.target.innerHeight / this.vpHeightRatio) - this.vpHeightOffset);
+    const vpHeight = Math.max(this.vpHeightMin, e.target.innerHeight / this.vpHeightRatio);
     // Set initial viewport size
     this.setState({ vpWidth, vpHeight });
   };
@@ -577,11 +598,11 @@ const MessageCenter = ReactRedux.connect(mapStateToMessageCenterProps)(cMessageC
 // COMPONENT: SETTINGS
 class cSettings extends React.Component {
   componentDidMount() {
-    window.addEventListener('keydown', this.handleKeyPress);
+    window.addEventListener('keydown', throttle(this.handleKeyPress, 80));
   }
 
   componentWillUnmount() {
-    window.removeEventListener('keydown', this.handleKeyPress);
+    window.removeEventListener('keydown', throttle(this.handleKeyPress, 80));
   }
 
   handleKeyPress = (e) => {
@@ -666,7 +687,7 @@ const playerInitialState = {
 };
 const messages = [];
 const uiInitialState = {
-  fogMode: true,
+  fogMode: false,
   messages
 };
 
