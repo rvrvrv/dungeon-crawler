@@ -20,7 +20,6 @@ body, .flex-container
 h1
   text-align: center
 
-
 .row
   display: flex
   justify-content: center
@@ -61,3 +60,19 @@ h1
 .boss
   background: $boss
   border: 2px solid lighten($boss, 2%)
+
+.settings
+  display: flex
+  justify-content: space-between
+  width: 50%
+  margin: 10px auto
+
+.settings-item
+  background: lighten($bg-color, 1%)
+  border-radius: 8px
+  padding: 2px 10px
+  cursor: pointer
+
+  input, label
+    cursor: pointer
+

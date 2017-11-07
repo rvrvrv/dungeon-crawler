@@ -622,19 +622,17 @@ class cSettings extends React.Component {
   render() {
     const { fogMode, toggleFogMode, restartGame } = this.props;
     return (
-      <div className="panel">
-        <div className="score-item">
+      <div className="settings">
+        <div className="settings-item" onClick={toggleFogMode}>
           <input
-            onChange={toggleFogMode}
             id="toggleFogMode"
             type="checkbox"
             checked={fogMode}
           />
-          <label htmlFor="toggle">Fog Mode</label>
+          <label className="settings-label" htmlFor="toggle">Fog Mode</label>
         </div>
-        <div className="score-item">
-          <div onClick={restartGame} className="restart-btn" />
-          <span onClick={restartGame} className="setting-label">Restart</span>
+        <div className="settings-item" onClick={restartGame}>
+          <span className="settings-label">Restart Game</span>
         </div>
       </div>
     );
@@ -658,10 +656,8 @@ const cApp = props => (
     <Header lvl={props.grid.dungeonLvl} />
     <div id="app">
       <Dungeon />
-      <div className="sidebar">
-        <Settings />
-        <MessageCenter />
-      </div>
+      <Settings />
+      <MessageCenter />
     </div>
   </div>
 );
