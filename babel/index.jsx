@@ -44,6 +44,11 @@ function clamp(num, [min, max]) {
   return Math.min(Math.max(min, num), max);
 }
 
+// Capitalize first letter of word
+function capitalize(word) {
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
 // Throttle (Source: https://gist.github.com/beaucharman/e46b8e4d03ef30480d7f4db5a78498ca)
 function throttle(callback, delay) {
   let isThrottled = false, args, context;
@@ -345,7 +350,9 @@ const playerInput = vector => (dispatch, getState) => {
         actions.push(
           changeEntity(destination, newPosition),
           changeHealth(player.health - playerDamage),
-          newMsg(`You attacked the ${destination.type} and caused ${enemyDamage} damage. The ${destination.type} struck back for ${playerDamage} of your health. The ${destination.type} survived and has ${destination.health} health remaining.`));
+          newMsg(`${capitalize(destination.type)} attacked!`),
+          newMsg(`Damage inflicted: ${enemyDamage}. Damage incurred: ${playerDamage}.`),
+          newMsg(`The ${destination.type} survived with ${destination.health} health remaining.`));
         // If player is dead, end and restart the game
         if (player.health - playerDamage <= 0) {
           dispatch(changeHealth(0));
@@ -406,8 +413,8 @@ const openingMessages = () => (dispatch) => {
 
 // Restart the game
 const restartGame = () => (dispatch) => {
-  dispatch(newMsg('Restarting the game...'));
-  setTimeout(() => dispatch(batchActions([restart(), createLvl(1), setDungeonLvl(1)])), 1000);
+  dispatch(newMsg('Restarting...'));
+  setTimeout(() => dispatch(batchActions([restart(), createLvl(1), setDungeonLvl(1)])), 500);
 };
 
 // REACT COMPONENTS
@@ -453,9 +460,9 @@ class cDungeon extends React.Component {
       vpHeight: 0
     };
     // Viewport params
-    this.vpHeightMin = 22;
-    this.vpHeightRatio = 30;
-    this.vpWidthRatio = 25;
+    this.vpHeightMin = 20;
+    this.vpHeightRatio = 36;
+    this.vpWidthRatio = 20;
   }
 
   componentWillMount() {
@@ -514,9 +521,9 @@ class cDungeon extends React.Component {
 
   // Handle window resizing
   handleResize = (e) => {
-    const vpWidth = e.target.innerWidth / this.vpWidthRatio;
+    const vpWidth = (e.target.innerWidth / this.vpWidthRatio);
     const vpHeight = Math.max(this.vpHeightMin, e.target.innerHeight / this.vpHeightRatio);
-    // Set initial viewport size
+    // Set viewport size
     this.setState({ vpWidth, vpHeight });
   };
 
@@ -582,10 +589,10 @@ const Dungeon = ReactRedux.connect(mapStateToDungeonProps, mapDispatchToDungeonP
 
 // COMPONENT: MESSAGE CENTER
 const cMessageCenter = ({ messages }) => (
-  <div className="panel messages">
+  <div className="messages">
     <ul>
       {
-        messages.slice(-3).map((msg, i) => <li key={`msg-${i}-${msg}`}>{msg}</li>)
+        messages.slice(-4).reverse().map((msg, i) => <li key={`msg-${i}-${msg}`} className={`msg-${i}`}>{msg}</li>)
       }
     </ul>
   </div>
