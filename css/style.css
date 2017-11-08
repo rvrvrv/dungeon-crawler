@@ -2,6 +2,7 @@ body, .flex-container {
   background: #000;
   color: #ccc;
   font-family: "Kelly Slab", sans-serif;
+  overflow: hidden;
 }
 
 .header-bg {
@@ -11,6 +12,7 @@ body, .flex-container {
 
 h1 {
   text-align: center;
+  white-space: nowrap;
 }
 
 .row {
@@ -23,8 +25,9 @@ h1 {
 }
 
 .cell {
-  height: 0.9em;
-  width: 0.9em;
+  height: 1em;
+  width: 1em;
+  min-width: 1em;
   background: #332000;
   border: 2px solid #291a00;
 }
@@ -67,16 +70,84 @@ h1 {
 .settings {
   display: flex;
   justify-content: space-between;
-  width: 50%;
+  width: 40%;
+  min-width: 250px;
   margin: 10px auto;
 }
 
 .settings-item {
-  background: #030303;
+  background: #080808;
   border-radius: 8px;
-  padding: 2px 10px;
+  padding: 5px 9px;
+  box-shadow: 0 0 10px #666666, 0 -5px 15px #333333;
+  cursor: pointer;
+  transition: color 0.2s, background 0.5s;
+}
+
+.settings-item:hover {
+  color: #fff;
+  background: #141414;
+}
+.settings-item:hover input, .settings-item:hover label {
   cursor: pointer;
 }
-.settings-item input, .settings-item label {
-  cursor: pointer;
+
+input {
+  position: absolute;
+  opacity: 0;
+}
+
+label::before {
+  display: inline-block;
+  content: "";
+  height: 0.8em;
+  width: 0.8em;
+  border: 1px solid #ddd;
+  border-radius: 50%;
+  margin: 3px 7px -2px 0px;
+  transition: background 0.2s;
+}
+
+input:checked + label::before {
+  background: #ccc;
+}
+
+ul {
+  font-size: 1.3em;
+  text-align: center;
+}
+
+li {
+  list-style-type: none;
+  margin: 10px;
+}
+
+.msg-0 {
+  color: #fff;
+  animation: msg-in 0.3s cubic-bezier(0.47, 0, 0.74, 0.71) both;
+}
+
+.msg-1 {
+  color: #bfbfbf;
+}
+
+.msg-2 {
+  color: #999999;
+}
+
+.msg-3 {
+  color: #737373;
+}
+
+@keyframes msg-in {
+  0% {
+    transform: scaleX(1.1);
+    filter: blur(2px);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scaleX(1);
+    filter: blur(0);
+    opacity: 1;
+  }
 }
