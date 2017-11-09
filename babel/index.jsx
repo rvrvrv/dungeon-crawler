@@ -51,7 +51,9 @@ function capitalize(word) {
 
 // Throttle (Source: https://gist.github.com/beaucharman/e46b8e4d03ef30480d7f4db5a78498ca)
 function throttle(callback, delay) {
-  let isThrottled = false, args, context;
+  let isThrottled = false,
+    args,
+    context;
   function wrapper() {
     if (isThrottled) {
       args = arguments;
@@ -437,19 +439,6 @@ const Cell = ({ cell, distance, foggy, zone }) => {
   );
 };
 
-const Header = ({ lvl }) => (
-  <div className="header-bg">
-    <h1 className={`header-${lvl}`}>Dungeon Crawler</h1>
-  </div>
-);
-
-const Score = ({ iconClass, title, value }) => (
-  <div className="score-item">
-    <div className={`icon cell ${iconClass}`} />
-    <span className="score-label">{`${title}: ${value}`}</span>
-  </div>
-);
-
 
 // COMPONENT: DUNGEON
 class cDungeon extends React.Component {
@@ -585,7 +574,12 @@ const mapDispatchToDungeonProps = dispatch => ({
 
 const Dungeon = ReactRedux.connect(mapStateToDungeonProps, mapDispatchToDungeonProps)(cDungeon);
 
-// TO-DO: Implement Tips
+// COMPONENT: HEADER
+const Header = ({ lvl }) => (
+  <div className="header-bg">
+    <h1 className={`header-${lvl}`}>Dungeon Crawler</h1>
+  </div>
+);
 
 // COMPONENT: MESSAGE CENTER
 const cMessageCenter = ({ messages }) => (
@@ -657,13 +651,52 @@ const mapDispatchToSettingsProps = dispatch => ({
 
 const Settings = ReactRedux.connect(mapStateToSettingsProps, mapDispatchToSettingsProps)(cSettings);
 
-// TO-DO: Implement Scoreboard
+// COMPONENT: SCORE
+const Score = ({ icon, title, value }) => (
+  <div className="score-item">
+    { icon && <div className={`icon cell ${icon}`} /> }
+    <span className="score-label">{`${title}: ${value}`}</span>
+  </div>
+);
+
+// COMPONENT: SCOREBOARD
+const Scoreboard = ({ grid, player }) => (
+  <div className="panel scoreboard">
+    <Score
+      icon="player"
+      title="Level"
+      value={Math.floor(player.xp / 100)}
+    />
+    <Score
+      title="Health"
+      value={player.health}
+    />
+    <Score
+      icon={`back-${grid.dungeonLvl}`}
+      title="Zone"
+      value={grid.dungeonLvl}
+    />
+    <Score
+      icon="weapon"
+      title="Weapon"
+      value={`${player.weapon.name} [Damage ${player.weapon.damage}]`}
+    />
+    <Score
+      icon="triangle"
+      title="XP to level up"
+      value={100 - (player.xp % 100)}
+    />
+  </div>
+);
+
+// COMPONENT: APP
 const cApp = props => (
   <div>
     <Header lvl={props.grid.dungeonLvl} />
     <div id="app">
       <Dungeon />
       <Settings />
+      <Scoreboard player={props.player} grid={props.grid} />
       <MessageCenter />
     </div>
   </div>
