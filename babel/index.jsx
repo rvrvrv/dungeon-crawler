@@ -202,7 +202,7 @@ const createEntities = (gameMap, lvl = 1) => {
   for (let i = 0; i < 7; i++) {
     enemies.push({ health: (lvl * 30) + 40, lvl: randomInt([Math.max(1, lvl - 1), lvl + 1]), type: 'enemy' });
   }
-  // New exits appear before Level 4
+  // New exits appear in Levels 1, 2, and 3
   const exits = [];
   if (lvl < 4) exits.push({ type: 'exit' });
   // Create player
@@ -216,8 +216,8 @@ const createEntities = (gameMap, lvl = 1) => {
   const weaponTypes = [
     { name: 'Pistol', damage: 13 },
     { name: 'Rifle', damage: 17 },
-    { name: '2x Pistol', damage: 26 },
-    { name: '2x Rifle', damage: 34 },
+    { name: 'Revolver', damage: 26 },
+    { name: 'Machine Gun', damage: 34 },
     { name: 'Shotgun', damage: 38 },
     { name: 'Rail Gun', damage: 42 },
     { name: 'Cannon', damage: 46 },
@@ -229,8 +229,8 @@ const createEntities = (gameMap, lvl = 1) => {
           (weapon.damage < ((lvl * 10) + 10))
           && (weapon.damage > ((lvl * 10) - 10))));
   const weapons = [];
-  // Randomly generate 3 available weapons
-  for (let i = 0; i < 3; i++) {
+  // Randomly generate 4 available weapons
+  for (let i = 0; i < 4; i++) {
     const weapon = Object.assign({}, availableWeapons[randomInt([1, availableWeapons.length]) - 1]);
     weapon.type = 'weapon';
     weapons.push(weapon);
@@ -339,9 +339,10 @@ const playerInput = vector => (dispatch, getState) => {
   }
   // Respond based on destination
   switch (destination.type) {
+    // Cases: Boss and Enemy
     case 'boss':
     case 'enemy': {
-      const playerLvl = Math.floor(player.xp / 100);
+      const playerLvl = Math.floor(player.xp / 30);
       // Player attacks enemy
       const enemyDamage = Math.floor(player.weapon.damage * (randomInt([10, 13]) / 10) * playerLvl);
       destination.health -= enemyDamage;
@@ -362,8 +363,8 @@ const playerInput = vector => (dispatch, getState) => {
             250);
           setTimeout(() => dispatch(newMsg('Oh no! You\'re dead. Try again, if you dare.')),
             1000);
-          setTimeout(() => dispatch(batchActions([restart(), createLvl(1), setDungeonLvl(1)])),
-            6000);
+          setTimeout(() => dispatch(batchActions([restart(), createLvl(1), setDungeonLvl(1)], newMsg('Welcome back to the dungeon!'))),
+            3000);
           return;
         }
       }
@@ -376,7 +377,7 @@ const playerInput = vector => (dispatch, getState) => {
           changeEntity(newPlayer, newPosition),
           changePlayerPosition(newPosition),
           newMsg(`You dealt ${enemyDamage} damage and won the battle! Way to go!`));
-        // If player defeats a boss, end and restart the game
+        // If player defeats a boss, end the game
         if (destination.type === 'boss') {
           setTimeout(() => dispatch(setDungeonLvl('victory')),
             250);
@@ -390,15 +391,44 @@ const playerInput = vector => (dispatch, getState) => {
           // If player defeats a regular enemy, continue the game
           setTimeout(() => dispatch(newMsg('You are 10 XP stronger.')),
             2000);
-          if ((player.xp + 10) % 100 === 0) {
-            setTimeout(() => dispatch(newMsg('You leveled up!')),
-              5000);
+          if ((player.xp + 10) % 30 === 0) {
+            setTimeout(() => dispatch(newMsg('You leveled up! Now, you can deal more damage.')),
+              2000);
           }
         }
       }
       break;
     }
-    // next cases
+    case 'potion':
+      // Limit health to 100
+      if (player.health === 100) dispatch(newMsg('The potion was ineffective, as you\'re already in perfect health!'));
+      else {
+        const healthGained = Math.min(25, 100 - player.health);
+        const msg = (healthGained < 25)
+          ? 'You drank the potion, and it completely restored your health!'
+          : 'You drank the potion and gained 25 health. Onward!';
+        actions.push(changeHealth(player.health + healthGained), newMsg(msg));
+      }
+      break;
+    case 'weapon':
+      // Respond based on weapon type and damage
+      if (player.weapon.name === destination.name) dispatch(newMsg(`You already have the ${destination.name}.`));
+      else if (player.weapon.damage > destination.damage) {
+        dispatch(newMsg(`You found the ${destination.name}.`));
+        setTimeout(() => dispatch(newMsg(`But, it's weaker than the ${player.weapon.name}, so you don't take it.`)), 1000);
+      } else {
+        actions.push(addWeapon(destination), newMsg(`You found the ${destination.name}.`));
+        setTimeout(() => dispatch(newMsg(`It inflicts ${destination.damage - player.weapon.damage} more damage than the ${player.weapon.name}. Excellent!`)), 1000);
+      }
+      break;
+    case 'exit':
+      // Set next level and notify the player
+      const nextLvl = grid.dungeonLvl + 1;
+      actions.push(newMsg(`Exit reached! Moving to Level ${nextLvl}...`),
+        dispatch(setDungeonLvl(`transit-${nextLvl}`)));
+      // Create new level after brief delay (for transition)
+      setTimeout(() => dispatch(batchActions([setDungeonLvl(nextLvl), createLvl(nextLvl)])), 2500);
+      break;
     default:
       break;
   }
@@ -433,7 +463,7 @@ const Cell = ({ cell, distance, foggy, zone }) => {
 
   return (
     <div
-      className={cell.type ? `${cell.type} cell` : `back-${zone} cell`}
+      className={cell.type ? `${cell.type} cell` : `bg bg-${zone} cell`}
       style={{ opacity: opacityVal }}
     />
   );
@@ -576,8 +606,8 @@ const Dungeon = ReactRedux.connect(mapStateToDungeonProps, mapDispatchToDungeonP
 
 // COMPONENT: HEADER
 const Header = ({ lvl }) => (
-  <div className="header-bg">
-    <h1 className={`header-${lvl}`}>Dungeon Crawler</h1>
+  <div className={`bg bg-header-${lvl}`}>
+    <h1>Dungeon Crawler</h1>
   </div>
 );
 
@@ -652,8 +682,8 @@ const mapDispatchToSettingsProps = dispatch => ({
 const Settings = ReactRedux.connect(mapStateToSettingsProps, mapDispatchToSettingsProps)(cSettings);
 
 // COMPONENT: STAT
-const Stat = ({ icon, title, value, health }) => (
-  <div className="stats-item">
+const Stat = ({ icon, title, value, health, xpLeft }) => (
+  <div className={'stats-item'}>
     { icon && <div className={`icon cell ${icon}`} /> }
     { (icon === 'weapon')
       ? <div><span>{`${title}:`}</span><br /><span>{`${value}`}</span></div>
@@ -661,6 +691,8 @@ const Stat = ({ icon, title, value, health }) => (
     }
     {health && <br />}
     { health && <span>{`Health: ${health}`}</span>}
+    {xpLeft && <br />}
+    { xpLeft && <span>{`XP to Lvl Up: ${xpLeft}`}</span>}
   </div>
 );
 
@@ -670,24 +702,20 @@ const Stats = ({ grid, player }) => (
   <div className="stats">
     <Stat
       icon="player"
-      title="Level"
-      value={Math.floor(player.xp / 100)}
+      title="Player Lvl"
+      value={Math.floor(player.xp / 30)}
       health={player.health}
-    />
-    <Stat
-      icon={`back-${grid.dungeonLvl}`}
-      title="Zone"
-      value={grid.dungeonLvl}
+      xpLeft={30 - (player.xp % 30)}
     />
     <Stat
       icon="weapon"
       title="Weapon"
-      value={`${player.weapon.name} [Damage ${player.weapon.damage}]`}
+      value={`${player.weapon.name} [${player.weapon.damage}]`}
     />
     <Stat
-      icon="triangle"
-      title="XP 'til Lvl Up"
-      value={100 - (player.xp % 100)}
+      icon={`bg bg-${grid.dungeonLvl}`}
+      title="Dungeon Lvl"
+      value={grid.dungeonLvl.toString().slice(-1).match(/[1-4]/) ? grid.dungeonLvl.toString().slice(-1) : ''}
     />
   </div>
 );
@@ -718,7 +746,7 @@ const gridInitialState = {
 };
 const playerInitialState = {
   health: 100,
-  xp: 100,
+  xp: 30,
   weapon: {
     name: 'Pistol',
     damage: 13
