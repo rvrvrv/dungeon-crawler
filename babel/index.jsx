@@ -451,7 +451,7 @@ class cDungeon extends React.Component {
     // Viewport params
     this.vpHeightMin = 20;
     this.vpHeightRatio = 36;
-    this.vpWidthRatio = 20;
+    this.vpWidthRatio = 21;
   }
 
   componentWillMount() {
@@ -651,52 +651,55 @@ const mapDispatchToSettingsProps = dispatch => ({
 
 const Settings = ReactRedux.connect(mapStateToSettingsProps, mapDispatchToSettingsProps)(cSettings);
 
-// COMPONENT: SCORE
-const Score = ({ icon, title, value }) => (
-  <div className="score-item">
+// COMPONENT: STAT
+const Stat = ({ icon, title, value, health }) => (
+  <div className="stats-item">
     { icon && <div className={`icon cell ${icon}`} /> }
-    <span className="score-label">{`${title}: ${value}`}</span>
+    { (icon === 'weapon')
+      ? <div><span>{`${title}:`}</span><br /><span>{`${value}`}</span></div>
+      : <span>{`${title}: ${value}`}</span>
+    }
+    {health && <br />}
+    { health && <span>{`Health: ${health}`}</span>}
   </div>
 );
 
-// COMPONENT: SCOREBOARD
-const Scoreboard = ({ grid, player }) => (
-  <div className="panel scoreboard">
-    <Score
+
+// COMPONENT: STATS
+const Stats = ({ grid, player }) => (
+  <div className="stats">
+    <Stat
       icon="player"
       title="Level"
       value={Math.floor(player.xp / 100)}
+      health={player.health}
     />
-    <Score
-      title="Health"
-      value={player.health}
-    />
-    <Score
+    <Stat
       icon={`back-${grid.dungeonLvl}`}
       title="Zone"
       value={grid.dungeonLvl}
     />
-    <Score
+    <Stat
       icon="weapon"
       title="Weapon"
       value={`${player.weapon.name} [Damage ${player.weapon.damage}]`}
     />
-    <Score
+    <Stat
       icon="triangle"
-      title="XP to level up"
+      title="XP 'til Lvl Up"
       value={100 - (player.xp % 100)}
     />
   </div>
 );
 
-// COMPONENT: APP
+
 const cApp = props => (
   <div>
     <Header lvl={props.grid.dungeonLvl} />
     <div id="app">
+      <Stats player={props.player} grid={props.grid} />
       <Dungeon />
       <Settings />
-      <Scoreboard player={props.player} grid={props.grid} />
       <MessageCenter />
     </div>
   </div>

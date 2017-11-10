@@ -10,7 +10,7 @@ body, .flex-container {
   background: #0d0d0d;
 }
 
-h1 {
+h1, .settings-item {
   text-align: center;
   white-space: nowrap;
 }
@@ -67,15 +67,14 @@ h1 {
   border: 2px solid #ff0a0a;
 }
 
-.settings {
+.settings, .stats {
   display: flex;
-  justify-content: space-between;
-  width: 40%;
-  min-width: 250px;
+  justify-content: center;
   margin: 10px auto;
 }
 
 .settings-item {
+  margin: 0 10%;
   background: #080808;
   border-radius: 8px;
   padding: 5px 9px;
@@ -90,6 +89,14 @@ h1 {
 }
 .settings-item:hover input, .settings-item:hover label {
   cursor: pointer;
+}
+
+.stats-item {
+  margin: 0 3%;
+  text-align: center;
+}
+.stats-item .icon {
+  margin: 2px auto;
 }
 
 input {
@@ -113,13 +120,14 @@ input:checked + label::before {
 }
 
 ul {
-  font-size: 1.3em;
+  font-size: 1.2em;
   text-align: center;
+  padding: 0;
 }
 
 li {
   list-style-type: none;
-  margin: 10px;
+  margin: 2px;
 }
 
 .msg-0 {

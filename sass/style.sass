@@ -18,7 +18,7 @@ body, .flex-container
   width: 100%
   background: lighten($bg-color, 5%)
 
-h1
+h1, .settings-item
   text-align: center
   white-space: nowrap
 
@@ -64,14 +64,13 @@ h1
   background: $boss
   border: 2px solid lighten($boss, 2%)
 
-.settings
+.settings, .stats
   display: flex
-  justify-content: space-between
-  width: 40%
-  min-width: 250px
+  justify-content: center
   margin: 10px auto
 
 .settings-item
+  margin: 0 10%
   background: lighten($bg-color, 3%)
   border-radius: 8px
   padding: 5px 9px
@@ -85,6 +84,13 @@ h1
 
   input, label
     cursor: pointer
+
+.stats-item
+  margin: 0 3%
+  text-align: center
+
+  .icon
+    margin: 2px auto
 
 input
   position: absolute
@@ -104,12 +110,14 @@ input:checked + label::before
   background: $floor
 
 ul
-  font-size: 1.3em
+  font-size: 1.2em
   text-align: center
+  padding: 0
 
 li
   list-style-type: none
-  margin: 10px
+  margin: 2px
+
 
 .msg-0
   color: #fff
