@@ -8,6 +8,11 @@ $player: #0bb
 $exit: #0d0
 $boss: #f00
 
+$lvl-1: #332000
+$lvl-2: #003320
+$lvl-3: #002044
+$lvl-4: #550020
+
 body, .flex-container
   background: $bg-color
   color: $floor
@@ -16,7 +21,6 @@ body, .flex-container
 
 .header-bg
   width: 100%
-  background: lighten($bg-color, 5%)
 
 h1, .settings-item
   text-align: center
@@ -27,14 +31,43 @@ h1, .settings-item
   justify-content: center
 
 .dungeon
-  border: 5px solid rgba(0,0,0,0.2)
+  border: 1em solid rgba(0,0,0,0.2)
 
 .cell
   height: 1em
   width: 1em
   min-width: 1em
-  background: $cell
-  border: 2px solid darken($cell, 2%)
+  border: 2px solid $bg-color
+
+.icon
+  border: 2px solid lighten($bg-color, 30%)
+
+.bg-1, .bg-transit-1
+  background: $lvl-1
+
+.bg-2, .bg-transit-2
+  background: $lvl-2
+
+.bg-3, .bg-transit-3
+  background: $lvl-3
+
+.bg-4, .bg-transit-4
+  background: $lvl-4
+
+.header-bg-1
+  background: darken($lvl-1, 7%)
+
+.header-bg-2
+  background: darken($lvl-2, 5%)
+
+.header-bg-3
+  background: darken($lvl-3, 5%)
+
+.header-bg-4
+  background: darken($lvl-4, 7%)
+
+.header-bg, .bg-transit-1, .bg-transit-2, .bg-transit-3, .bg-transit-4
+  transition: background 2.5s
 
 .floor
   background: $floor
@@ -64,10 +97,10 @@ h1, .settings-item
   background: $boss
   border: 2px solid lighten($boss, 2%)
 
-.settings, .stats
+.settings
   display: flex
   justify-content: center
-  margin: 10px auto
+  margin: 0 auto
 
 .settings-item
   margin: 0 10%
@@ -85,12 +118,18 @@ h1, .settings-item
   input, label
     cursor: pointer
 
+.stats
+  min-width: 14em
+
 .stats-item
-  margin: 0 3%
+  display: inline-block
+  vertical-align: top
+  width: 33.333%
   text-align: center
 
   .icon
-    margin: 2px auto
+    margin: .1em auto
+
 
 input
   position: absolute

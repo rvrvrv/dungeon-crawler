@@ -7,7 +7,6 @@ body, .flex-container {
 
 .header-bg {
   width: 100%;
-  background: #0d0d0d;
 }
 
 h1, .settings-item {
@@ -21,15 +20,54 @@ h1, .settings-item {
 }
 
 .dungeon {
-  border: 5px solid rgba(0, 0, 0, 0.2);
+  border: 1em solid rgba(0, 0, 0, 0.2);
 }
 
 .cell {
   height: 1em;
   width: 1em;
   min-width: 1em;
+  border: 2px solid #000;
+}
+
+.icon {
+  border: 2px solid #4d4d4d;
+}
+
+.bg-1, .bg-transit-1 {
   background: #332000;
-  border: 2px solid #291a00;
+}
+
+.bg-2, .bg-transit-2 {
+  background: #003320;
+}
+
+.bg-3, .bg-transit-3 {
+  background: #002044;
+}
+
+.bg-4, .bg-transit-4 {
+  background: #550020;
+}
+
+.header-bg-1 {
+  background: #0f0a00;
+}
+
+.header-bg-2 {
+  background: #001a10;
+}
+
+.header-bg-3 {
+  background: #00142b;
+}
+
+.header-bg-4 {
+  background: #310013;
+}
+
+.header-bg, .bg-transit-1, .bg-transit-2, .bg-transit-3, .bg-transit-4 {
+  transition: background 2.5s;
 }
 
 .floor {
@@ -67,10 +105,10 @@ h1, .settings-item {
   border: 2px solid #ff0a0a;
 }
 
-.settings, .stats {
+.settings {
   display: flex;
   justify-content: center;
-  margin: 10px auto;
+  margin: 0 auto;
 }
 
 .settings-item {
@@ -91,12 +129,18 @@ h1, .settings-item {
   cursor: pointer;
 }
 
+.stats {
+  min-width: 14em;
+}
+
 .stats-item {
-  margin: 0 3%;
+  display: inline-block;
+  vertical-align: top;
+  width: 33.333%;
   text-align: center;
 }
 .stats-item .icon {
-  margin: 2px auto;
+  margin: 0.1em auto;
 }
 
 input {
