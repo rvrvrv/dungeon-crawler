@@ -451,7 +451,7 @@ const restartGame = () => (dispatch) => {
 
 // REACT COMPONENTS
 const Cell = ({ cell, distance, foggy, zone }) => {
-  let opacityVal = cell.opacity;
+  let opacityVal = cell.opacity || 1;
   if (foggy) {
     if (distance > 16) opacityVal = 0;
     // Fade increasingly distant cells
