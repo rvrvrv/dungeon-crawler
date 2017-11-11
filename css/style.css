@@ -50,26 +50,81 @@ h1, .settings-item {
   background: #550020;
 }
 
-.header-bg-1 {
+.bg-header-1 {
   background: #0f0a00;
 }
 
-.header-bg-2 {
+.bg-header-2 {
   background: #001a10;
 }
 
-.header-bg-3 {
+.bg-header-3 {
   background: #00142b;
 }
 
-.header-bg-4 {
+.bg-header-4 {
   background: #310013;
 }
 
-.header-bg, .bg-transit-1, .bg-transit-2, .bg-transit-3, .bg-transit-4 {
+.bg-header, .bg-transit-1, .bg-transit-2, .bg-transit-3, .bg-transit-4 {
   transition: background 2.5s;
 }
 
+.bg-death {
+  background: #200;
+  animation: animate-death 3s ease-in 0s 1;
+}
+
+@keyframes animate-death {
+  0% {
+    background: #c00;
+  }
+  3% {
+    background: #000;
+  }
+  8% {
+    background: #900;
+  }
+  9% {
+    background: #000;
+  }
+  11% {
+    background: #a00;
+  }
+  12% {
+    background: #000;
+  }
+  13% {
+    background: #800;
+  }
+  100% {
+    background: #200;
+  }
+}
+.bg-victory {
+  animation: animate-victory 1s linear infinite;
+}
+
+@keyframes animate-victory {
+  0% {
+    background: #fff;
+  }
+  20% {
+    background: #f0f;
+  }
+  40% {
+    background: #0ff;
+  }
+  60% {
+    background: #0f0;
+  }
+  80% {
+    background: #ff0;
+  }
+  100% {
+    background: #fff;
+  }
+}
 .floor {
   background: #ccc;
   border: 2px solid #cecece;
@@ -160,7 +215,8 @@ label::before {
 }
 
 input:checked + label::before {
-  background: #ccc;
+  background: #b3b3b3;
+  box-shadow: 0 0 5px #b3b3b3;
 }
 
 ul {
@@ -180,7 +236,7 @@ li {
 }
 
 .msg-1 {
-  color: #bfbfbf;
+  color: #b3b3b3;
 }
 
 .msg-2 {
@@ -188,7 +244,7 @@ li {
 }
 
 .msg-3 {
-  color: #737373;
+  color: #666666;
 }
 
 @keyframes msg-in {
