@@ -1,3 +1,4 @@
+// Tutorial Credit: https://medium.com/@victorcatalintorac/react-redux-dungeon-crawler-7b52e67806bd
 // REDUX SETUP
 // Action Types
 const BATCH_ACTIONS = 'BATCH_ACTIONS';
@@ -196,7 +197,7 @@ const createDungeon = () => {
 const createEntities = (gameMap, lvl = 1) => {
   // Bosses appear at Level 4
   const bosses = [];
-  if (lvl === 4) bosses.push({ health: 400, lvl: 5, type: 'boss' });
+  if (lvl === 4) bosses.push({ health: 350, lvl: 5, type: 'boss' });
   // Enemies attributes are based on level
   const enemies = [];
   for (let i = 0; i < 7; i++) {
@@ -358,14 +359,17 @@ const playerInput = vector => (dispatch, getState) => {
           newMsg(`The ${destination.type} survived with ${destination.health} health remaining.`));
         // If player is dead, end and restart the game
         if (player.health - playerDamage <= 0) {
-          dispatch(changeHealth(0));
-          setTimeout(() => dispatch(setDungeonLvl('death')),
-            250);
-          setTimeout(() => dispatch(newMsg('Oh no! You\'re dead. Try again, if you dare.')),
-            1000);
-          setTimeout(() => dispatch(batchActions([restart(), createLvl(1), setDungeonLvl(1)], newMsg('Welcome back to the dungeon!'))),
-            3000);
-          return;
+          // Prevent double-calling due to quick input
+          if (player.health !== 0) {
+            // Update health and end game
+            actions.push(changeHealth(0),
+              setDungeonLvl('death'),
+              newMsg('Oh no! You\'re dead. Time to try again...'));
+            // Delay automatic restart
+            setTimeout(() => dispatch(batchActions([restart(), createLvl(1), setDungeonLvl(1), newMsg('Welcome back to the dungeon!')])),
+              4000);
+          }
+          break;
         }
       }
       // If player wins the fight, respond accordingly
@@ -427,7 +431,7 @@ const playerInput = vector => (dispatch, getState) => {
       actions.push(newMsg(`Exit reached! Moving to Level ${nextLvl}...`),
         dispatch(setDungeonLvl(`transit-${nextLvl}`)));
       // Create new level after brief delay (for transition)
-      setTimeout(() => dispatch(batchActions([setDungeonLvl(nextLvl), createLvl(nextLvl)])), 2500);
+      setTimeout(() => dispatch(batchActions([setDungeonLvl(nextLvl), createLvl(nextLvl), newMsg(`Welcome to Level ${nextLvl}. Good luck!`)])), 2500);
       break;
     default:
       break;
@@ -436,11 +440,12 @@ const playerInput = vector => (dispatch, getState) => {
   dispatch(batchActions(actions));
 };
 
-
 // Opening messages at beginning of each game
-const openingMessages = () => (dispatch) => {
-  dispatch(newMsg('Enter the dungeon!'));
-  setTimeout(() => dispatch(newMsg('Explore, battle, and survive!')), 2000);
+const openingMessages = restart => (dispatch) => {
+  dispatch(newMsg(`${restart ? 'Welcome back to' : 'Enter'} the dungeon!`));
+  // If player restarted the game, display different message
+  if (restart) setTimeout(() => dispatch(newMsg('Better luck this time...')), 2000);
+  else setTimeout(() => dispatch(newMsg('Explore, battle, and survive!')), 2000);
 };
 
 // Restart the game
@@ -498,9 +503,9 @@ class cDungeon extends React.Component {
   }
 
   componentDidMount() {
+    this.props.triggerOpeningMessages();
     window.addEventListener('keydown', throttle(this.handleKeyPress, 80));
     window.addEventListener('resize', this.handleResize);
-    this.props.triggerOpeningMessages();
   }
 
   componentWillUnmount() {
@@ -508,7 +513,7 @@ class cDungeon extends React.Component {
     window.removeEventListener('resize', this.handleResize, 500);
   }
 
-  // Handle user input
+  // Handle keyboard input (arrows or WASD to move)
   handleKeyPress = (e) => {
     // Only respond during active game
     if (typeof this.props.grid.dungeonLvl === 'number') {
@@ -606,7 +611,7 @@ const Dungeon = ReactRedux.connect(mapStateToDungeonProps, mapDispatchToDungeonP
 
 // COMPONENT: HEADER
 const Header = ({ lvl }) => (
-  <div className={`bg bg-header-${lvl}`}>
+  <div className={`bg-header bg-header-${lvl}`}>
     <h1>Dungeon Crawler</h1>
   </div>
 );
@@ -644,14 +649,19 @@ class cSettings extends React.Component {
         break;
       // R for Restart
       case 82:
-        this.props.restartGame();
+        this.manualRestart();
         break;
       default:
     }
   };
 
+  manualRestart = () => {
+    this.props.restartGame();
+    setTimeout(() => this.props.triggerOpeningMessages(), 500);
+  };
+
   render() {
-    const { fogMode, toggleFogMode, restartGame } = this.props;
+    const { fogMode, toggleFogMode } = this.props;
     return (
       <div className="settings">
         <div className="settings-item" onClick={toggleFogMode}>
@@ -662,7 +672,7 @@ class cSettings extends React.Component {
           />
           <label className="settings-label" htmlFor="toggle">Fog Mode</label>
         </div>
-        <div className="settings-item" onClick={restartGame}>
+        <div className="settings-item" onClick={this.manualRestart}>
           <span className="settings-label">Restart Game</span>
         </div>
       </div>
@@ -676,7 +686,8 @@ const mapStateToSettingsProps = ({ ui }) => ({
 
 const mapDispatchToSettingsProps = dispatch => ({
   toggleFogMode: () => dispatch(toggleFogMode()),
-  restartGame: () => dispatch(restartGame())
+  restartGame: () => dispatch(restartGame()),
+  triggerOpeningMessages: () => dispatch(openingMessages(restart))
 });
 
 const Settings = ReactRedux.connect(mapStateToSettingsProps, mapDispatchToSettingsProps)(cSettings);
@@ -689,13 +700,14 @@ const Stat = ({ icon, title, value, health, xpLeft }) => (
       ? <div><span>{`${title}:`}</span><br /><span>{`${value}`}</span></div>
       : <span>{`${title}: ${value}`}</span>
     }
-    {health && <br />}
-    { health && <span>{`Health: ${health}`}</span>}
-    {xpLeft && <br />}
-    { xpLeft && <span>{`XP to Lvl Up: ${xpLeft}`}</span>}
+    {health &&
+      <div>
+        <span>{`Health: ${health}`}</span>
+        <br />
+        <span>{`XP to Lvl Up: ${xpLeft}`}</span>
+      </div>}
   </div>
 );
-
 
 // COMPONENT: STATS
 const Stats = ({ grid, player }) => (
@@ -715,12 +727,12 @@ const Stats = ({ grid, player }) => (
     <Stat
       icon={`bg bg-${grid.dungeonLvl}`}
       title="Dungeon Lvl"
-      value={grid.dungeonLvl.toString().slice(-1).match(/[1-4]/) ? grid.dungeonLvl.toString().slice(-1) : ''}
+      value={grid.dungeonLvl.toString().slice(-1).match(/[1-4]/) ? grid.dungeonLvl.toString().slice(-1) : '∞'}
     />
   </div>
 );
 
-
+// COMPONENT: APP
 const cApp = props => (
   <div>
     <Header lvl={props.grid.dungeonLvl} />
