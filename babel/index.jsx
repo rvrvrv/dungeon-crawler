@@ -465,10 +465,10 @@ const Cell = ({ cell, distance, foggy, zone }) => {
     else if (distance > 6) opacityVal = Math.min(opacityVal, 0.9);
     else opacityVal = Math.min(opacityVal, 1);
   }
-
   return (
     <div
       className={cell.type ? `${cell.type} cell` : `bg bg-${zone} cell`}
+      data-coords={cell.coords}
       style={{ opacity: opacityVal }}
     />
   );
@@ -484,7 +484,7 @@ class cDungeon extends React.Component {
       vpHeight: 0
     };
     // Viewport params
-    this.vpHeightMin = 20;
+    this.vpHeightMin = 10;
     this.vpHeightRatio = 36;
     this.vpWidthRatio = 21;
   }
@@ -506,12 +506,30 @@ class cDungeon extends React.Component {
     this.props.triggerOpeningMessages();
     window.addEventListener('keydown', throttle(this.handleKeyPress, 80));
     window.addEventListener('resize', this.handleResize);
+    document.getElementsByClassName('dungeon')[0].addEventListener('mousedown', throttle(this.handleClick, 80));
+    document.getElementsByClassName('dungeon')[0].addEventListener('touchend', this.preventZoom);
   }
 
   componentWillUnmount() {
     window.removeEventListener('keydown', throttle(this.handleKeyPress, 80));
     window.removeEventListener('resize', this.handleResize, 500);
+    document.getElementsByClassName('dungeon')[0].removeEventListener('mousedown', throttle(this.handleClick, 80));
+    document.getElementsByClassName('dungeon')[0].removeEventListener('touchend', this.preventZoom);
   }
+
+  // Handle mouse/touch input (click to move)
+  handleClick = (e) => {
+    // Only respond to cell clicks during active game
+    if (e.target.classList.contains('cell') && typeof this.props.grid.dungeonLvl === 'number') {
+      // Store position of clicked and player cells
+      const clicked = e.target.dataset.coords.split(',').map(e => +e);
+      const player = this.props.grid.playerPosition;
+      // Determine intended move from different between clicked and player
+      const move = [clamp(clicked[0] - player[0], [-1, 1]), clamp(clicked[1] - player[1], [-1, 1])];
+      // Attempt valid moves only (no diagonals)
+      if (Math.abs(move[0]) !== Math.abs(move[1])) this.props.playerInput(move);
+    }
+  };
 
   // Handle keyboard input (arrows or WASD to move)
   handleKeyPress = (e) => {
@@ -551,6 +569,19 @@ class cDungeon extends React.Component {
     this.setState({ vpWidth, vpHeight });
   };
 
+  // Prevent double-tap zoom on touch-screen devices
+  // Source: https://stackoverflow.com/questions/10614481/disable-double-tap-zoom-option-in-browser-on-touch-devices
+  preventZoom = (e) => {
+    const t2 = e.timeStamp;
+    const t1 = e.currentTarget.dataset.lastTouch || t2;
+    const dt = t2 - t1;
+    const fingers = e.touches.length;
+    e.currentTarget.dataset.lastTouch = t2;
+    if (!dt || dt > 500 || fingers > 1) return; // Not double-tap
+    e.preventDefault();
+    e.target.click();
+  };
+
   render() {
     // Maintain even numbers for viewport width and height
     const vpWidth = this.state.vpWidth - (this.state.vpWidth % 2);
@@ -567,6 +598,8 @@ class cDungeon extends React.Component {
     const newEntities = entities.map((row, i) => row.map((cell, j) => {
       // Calculate distance of cell from player
       cell.distance = Math.abs(playerY - i) + Math.abs(playerX - j);
+      // Store coordinates of cell
+      cell.coords = [j, i];
       return cell;
     }));
 
@@ -574,7 +607,7 @@ class cDungeon extends React.Component {
     const cells = newEntities
       .filter((row, i) => i >= top && i < bottom)
       .map((row, i) => (
-        <div key={`row-${i}`} className="row">
+        <div key={`row-${i}`} className="row" data-row={i}>
           {
             row
               .filter((r, j) => j >= left && j < right)
@@ -757,7 +790,7 @@ const gridInitialState = {
   playerPosition: []
 };
 const playerInitialState = {
-  health: 100,
+  health: 1000,
   xp: 30,
   weapon: {
     name: 'Pistol',
