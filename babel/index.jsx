@@ -1,4 +1,4 @@
-// Tutorial Credit: https://medium.com/@victorcatalintorac/react-redux-dungeon-crawler-7b52e67806bd
+// Tutorial Source: https://medium.com/@victorcatalintorac/react-redux-dungeon-crawler-7b52e67806bd
 // REDUX SETUP
 // Action Types
 const BATCH_ACTIONS = 'BATCH_ACTIONS';
@@ -270,7 +270,6 @@ const createEntities = (gameMap, lvl = 1) => {
   return { entities: gameMap, playerPosition };
 };
 
-
 // ADDITIONAL REDUX SETUP
 // Action Creators
 const addXP = payload => ({
@@ -479,7 +478,6 @@ const Cell = ({ cell, distance, foggy, zone }) => {
   );
 };
 
-
 // COMPONENT: DUNGEON
 class cDungeon extends React.Component {
   constructor() {
@@ -582,7 +580,7 @@ class cDungeon extends React.Component {
     const dt = t2 - t1;
     const fingers = e.touches.length;
     e.currentTarget.dataset.lastTouch = t2;
-    if (!dt || dt > 500 || fingers > 1) return; // Not double-tap
+    if (!dt || dt > 300 || fingers > 1) return; // Not double-tap
     e.preventDefault();
     e.target.click();
   };
@@ -666,7 +664,6 @@ const cMessageCenter = ({ messages }) => (
 );
 
 const mapStateToMessageCenterProps = ({ ui }) => ({ messages: ui.messages });
-
 const MessageCenter = ReactRedux.connect(mapStateToMessageCenterProps)(cMessageCenter);
 
 // COMPONENT: SETTINGS
@@ -787,7 +784,6 @@ const mapStateToAppProps = ({ grid, player }) => ({ grid, player });
 const App = ReactRedux.connect(mapStateToAppProps)(cApp);
 
 // REDUCERS
-
 // First, set initial states
 const gridInitialState = {
   entities: [[]],
