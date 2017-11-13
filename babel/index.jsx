@@ -702,7 +702,7 @@ class cSettings extends React.Component {
     const { fogMode, toggleFogMode } = this.props;
     return (
       <div className="settings">
-        <div className="settings-item" onClick={toggleFogMode}>
+        <div className="settings-item" onClick={toggleFogMode} role="presentation">
           <input
             id="toggleFogMode"
             type="checkbox"
@@ -710,8 +710,8 @@ class cSettings extends React.Component {
           />
           <label className="settings-label" htmlFor="toggle">Fog Mode</label>
         </div>
-        <div className="settings-item" onClick={this.manualRestart}>
-          <span className="settings-label">Restart Game</span>
+        <div className="settings-item" onClick={this.manualRestart} role="presentation">
+          <span className="settings-label" role="button">Restart Game</span>
         </div>
       </div>
     );
