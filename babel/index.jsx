@@ -2,11 +2,11 @@
 // REDUX SETUP
 // Action Types
 const BATCH_ACTIONS = 'BATCH_ACTIONS';
-const ADD_WEAPON = 'ADD_WEAPON';
 const ADD_XP = 'ADD_XP';
 const CHANGE_ENTITY = 'CHANGE_ENTITY';
 const CHANGE_HEALTH = 'CHANGE_HEALTH';
 const CHANGE_PLAYER_POSITION = 'CHANGE_PLAYER_POSITION';
+const CHANGE_WEAPON = 'CHANGE_WEAPON';
 const CREATE_LVL = 'CREATE_LVL';
 const NEW_MSG = 'NEW_MSG';
 const RESTART = 'RESTART';
@@ -273,11 +273,6 @@ const createEntities = (gameMap, lvl = 1) => {
 
 // ADDITIONAL REDUX SETUP
 // Action Creators
-const addWeapon = payload => ({
-  type: ADD_WEAPON,
-  payload
-});
-
 const addXP = payload => ({
   type: ADD_XP,
   payload
@@ -295,6 +290,11 @@ const changeHealth = payload => ({
 
 const changePlayerPosition = payload => ({
   type: CHANGE_PLAYER_POSITION,
+  payload
+});
+
+const changeWeapon = payload => ({
+  type: CHANGE_WEAPON,
   payload
 });
 
@@ -320,6 +320,20 @@ const setDungeonLvl = payload => ({
 const toggleFogMode = () => ({
   type: TOGGLE_FOG_MODE
 });
+
+// Opening messages at beginning of each game
+const openingMessages = restarted => (dispatch) => {
+  dispatch(newMsg(`${restarted ? 'Welcome back to' : 'Enter'} the dungeon!`));
+  // If player restarted the game, display different message
+  if (restarted) setTimeout(() => dispatch(newMsg('Better luck this time...')), 2000);
+  else setTimeout(() => dispatch(newMsg('Explore, battle, and survive!')), 2000);
+};
+
+// Restart the game
+const restartGame = () => (dispatch) => {
+  dispatch(newMsg('Restarting...'));
+  setTimeout(() => dispatch(batchActions([restart(), createLvl(1), setDungeonLvl(1)])), 500);
+};
 
 // Respond to player input
 const playerInput = vector => (dispatch, getState) => {
@@ -389,8 +403,8 @@ const playerInput = vector => (dispatch, getState) => {
             1000);
           setTimeout(() => dispatch(newMsg('...In other words, you won the game!')),
             2000);
-          setTimeout(() => dispatch(batchActions([restart(), createLvl(1), setDungeonLvl(1)])),
-            7000);
+          setTimeout(() => dispatch(restartGame()), 7000);
+          setTimeout(() => dispatch(newMsg('Try to win all over again!')), 8000);
         } else {
           // If player defeats a regular enemy, continue the game
           setTimeout(() => dispatch(newMsg('You are 10 XP stronger.')),
@@ -421,11 +435,11 @@ const playerInput = vector => (dispatch, getState) => {
         dispatch(newMsg(`You found the ${destination.name}.`));
         setTimeout(() => dispatch(newMsg(`But, it's weaker than the ${player.weapon.name}, so you don't take it.`)), 1000);
       } else {
-        actions.push(addWeapon(destination), newMsg(`You found the ${destination.name}.`));
+        actions.push(changeWeapon(destination), newMsg(`You found the ${destination.name}.`));
         setTimeout(() => dispatch(newMsg(`It inflicts ${destination.damage - player.weapon.damage} more damage than the ${player.weapon.name}. Excellent!`)), 1000);
       }
       break;
-    case 'exit':
+    case 'exit': {
       // Set next level and notify the player
       const nextLvl = grid.dungeonLvl + 1;
       actions.push(newMsg(`Exit reached! Moving to Level ${nextLvl}...`),
@@ -433,6 +447,7 @@ const playerInput = vector => (dispatch, getState) => {
       // Create new level after brief delay (for transition)
       setTimeout(() => dispatch(batchActions([setDungeonLvl(nextLvl), createLvl(nextLvl), newMsg(`Welcome to Level ${nextLvl}. Good luck!`)])), 2500);
       break;
+    }
     default:
       break;
   }
@@ -440,30 +455,20 @@ const playerInput = vector => (dispatch, getState) => {
   dispatch(batchActions(actions));
 };
 
-// Opening messages at beginning of each game
-const openingMessages = restart => (dispatch) => {
-  dispatch(newMsg(`${restart ? 'Welcome back to' : 'Enter'} the dungeon!`));
-  // If player restarted the game, display different message
-  if (restart) setTimeout(() => dispatch(newMsg('Better luck this time...')), 2000);
-  else setTimeout(() => dispatch(newMsg('Explore, battle, and survive!')), 2000);
-};
-
-// Restart the game
-const restartGame = () => (dispatch) => {
-  dispatch(newMsg('Restarting...'));
-  setTimeout(() => dispatch(batchActions([restart(), createLvl(1), setDungeonLvl(1)])), 500);
-};
-
 // REACT COMPONENTS
 const Cell = ({ cell, distance, foggy, zone }) => {
   let opacityVal = cell.opacity || 1;
   if (foggy) {
-    if (distance > 16) opacityVal = 0;
+    if (distance > 15) opacityVal = 0;
     // Fade increasingly distant cells
-    else if (distance > 8) opacityVal = Math.min(opacityVal, (250 / (2 ** distance)));
-    else if (distance > 7) opacityVal = Math.min(opacityVal, 0.7);
-    else if (distance > 6) opacityVal = Math.min(opacityVal, 0.9);
-    else opacityVal = Math.min(opacityVal, 1);
+    else if (distance > 4) {
+      opacityVal = Math.min(opacityVal, (100 / (2 ** distance)));
+      // Randomize more foggy cells
+      if (distance > 7 && distance < 12) {
+        const random = (randomInt([1, 10]) - randomInt([1, 10])) / 100;
+        opacityVal -= random;
+      }
+    } else opacityVal = Math.min(opacityVal, 1);
   }
   return (
     <div
@@ -522,7 +527,7 @@ class cDungeon extends React.Component {
     // Only respond to cell clicks during active game
     if (e.target.classList.contains('cell') && typeof this.props.grid.dungeonLvl === 'number') {
       // Store position of clicked and player cells
-      const clicked = e.target.dataset.coords.split(',').map(e => +e);
+      const clicked = e.target.dataset.coords.split(',').map(coord => +coord);
       const player = this.props.grid.playerPosition;
       // Determine intended move from different between clicked and player
       const move = [clamp(clicked[0] - player[0], [-1, 1]), clamp(clicked[1] - player[1], [-1, 1])];
@@ -790,7 +795,7 @@ const gridInitialState = {
   playerPosition: []
 };
 const playerInitialState = {
-  health: 1000,
+  health: 100,
   xp: 30,
   weapon: {
     name: 'Pistol',
@@ -799,7 +804,7 @@ const playerInitialState = {
 };
 const messages = [];
 const uiInitialState = {
-  fogMode: false,
+  fogMode: true,
   messages
 };
 
@@ -829,12 +834,12 @@ const grid = (state = gridInitialState, { type, payload }) => {
 };
 const player = (state = playerInitialState, { type, payload }) => {
   switch (type) {
-    case ADD_WEAPON:
-      return { ...state, weapon: payload };
     case ADD_XP:
       return { ...state, xp: state.xp + payload };
     case CHANGE_HEALTH:
       return { ...state, health: payload };
+    case CHANGE_WEAPON:
+      return { ...state, weapon: payload };
     case RESTART:
       return playerInitialState;
     default:
