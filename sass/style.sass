@@ -4,7 +4,7 @@ $floor: #ccc
 $enemy: #a00
 $weapon: #ff1
 $potion: #a0c
-$player: #0bb
+$player: #0ab
 $exit: #0d0
 $boss: #f00
 
@@ -32,6 +32,7 @@ h1, .settings-item
 
 .dungeon
   border: 1em solid rgba(0,0,0,0.2)
+  cursor: crosshair
 
 .cell
   height: 1em
@@ -118,11 +119,11 @@ h1, .settings-item
 
 .weapon
   background: $weapon
-  border: 2px solid lighten($weapon, 2%)
+  border: 2px solid lighten($weapon, 30%)
 
 .player
   background: $player
-  border: 2px double lighten($player, 30%)
+  border: 2px double lighten($player, 20%)
 
 .potion
   background: $potion
@@ -130,11 +131,11 @@ h1, .settings-item
 
 .exit
   background: $exit
-  border: 2px solid lighten($exit, 2%)
+  border: 2px solid lighten($exit, 10%)
 
 .boss
   background: $boss
-  border: 2px solid lighten($boss, 2%)
+  border: 2px solid lighten($boss, 50%)
 
 .settings
   display: flex
@@ -169,7 +170,6 @@ h1, .settings-item
   .icon
     margin: .1em auto
 
-
 input
   position: absolute
   opacity: 0
@@ -185,7 +185,7 @@ label::before
   transition: background 0.2s
 
 input:checked + label::before
-  background: darken($floor, 10%)
+  background: darken($floor, 20%)
   box-shadow: 0 0 5px darken($floor, 10%)
 
 ul

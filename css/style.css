@@ -21,6 +21,7 @@ h1, .settings-item {
 
 .dungeon {
   border: 1em solid rgba(0, 0, 0, 0.2);
+  cursor: crosshair;
 }
 
 .cell {
@@ -137,12 +138,12 @@ h1, .settings-item {
 
 .weapon {
   background: #ff1;
-  border: 2px solid #ffff1b;
+  border: 2px solid #ffffaa;
 }
 
 .player {
-  background: #0bb;
-  border: 2px double #55ffff;
+  background: #0ab;
+  border: 2px double #22ebff;
 }
 
 .potion {
@@ -152,12 +153,12 @@ h1, .settings-item {
 
 .exit {
   background: #0d0;
-  border: 2px solid #00e700;
+  border: 2px solid #11ff11;
 }
 
 .boss {
   background: #f00;
-  border: 2px solid #ff0a0a;
+  border: 2px solid white;
 }
 
 .settings {
@@ -215,7 +216,7 @@ label::before {
 }
 
 input:checked + label::before {
-  background: #b3b3b3;
+  background: #999999;
   box-shadow: 0 0 5px #b3b3b3;
 }
 
